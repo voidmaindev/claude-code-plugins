@@ -1,6 +1,6 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "voidmaindev-plugins",
+  "name": "voidmaindev-claude-code-plugins",
   "owner": {
     "name": "voidmaindev"
   },

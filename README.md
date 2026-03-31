@@ -6,7 +6,7 @@ Claude Code plugin marketplace by voidmaindev.
 
 ```
 /plugin marketplace add voidmaindev/claude-code-plugins
-/plugin install new-project@voidmaindev-plugins
+/plugin install new-project@voidmaindev-claude-code-plugins
 ```
 
 ## Available Plugins
