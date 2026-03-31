@@ -1,8 +1,0 @@
-{
-  "plugins": [
-    {
-      "name": "new_project",
-      "description": "Scaffold a new project with GitHub repo, CLAUDE.md, and bash shortcut"
-    }
-  ]
-}

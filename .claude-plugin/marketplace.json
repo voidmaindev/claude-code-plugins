@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "voidmaindev-plugins",
+  "owner": {
+    "name": "voidmaindev"
+  },
+  "metadata": {
+    "description": "Claude Code plugins by voidmaindev",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "new-project",
+      "source": "./plugins/new-project",
+      "description": "Scaffold a new project with GitHub repo, CLAUDE.md, and bash shortcut",
+      "version": "1.0.0",
+      "author": {
+        "name": "voidmaindev"
+      },
+      "category": "development",
+      "keywords": ["scaffold", "project", "setup"]
+    }
+  ]
+}
