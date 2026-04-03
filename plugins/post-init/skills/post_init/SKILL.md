@@ -32,7 +32,8 @@ Clean up the active CLAUDE.md by removing all one-time project initialization se
    If a section mixes init and ongoing content, extract and keep only the ongoing parts.
 
 3. **Present findings to the user:**
-   - List each identified init section by its heading and a one-line excerpt so the user can see what will be removed.
+   - List each identified init section **individually** — do NOT group multiple sections into one item. Every distinct heading or subsection that will be removed must be its own numbered entry with its heading name, line range, and a one-line excerpt.
+   - For example, if the CLAUDE.md has a "Kickoff Interview" section, a "Go Template Init" subsection, and a "Kanban Board Creation" subsection, list all three separately — not as one combined "Project Kickoff" block.
    - After listing all sections, use the AskUserQuestion tool to ask: "These look like one-time project setup sections. Remove all of them from CLAUDE.md?"
    - Do NOT proceed without explicit confirmation via the dialog.
 
