@@ -20,7 +20,6 @@ Clean up the active CLAUDE.md by removing all one-time project initialization se
    - **PM board creation** — initial Kanban board setup, creating GitHub Projects, populating issues for the first time (NOT ongoing board maintenance/updates)
    - **Documentation folder creation** — creating the initial `docs/` folder and first docs (NOT updating existing docs)
    - **Hard sequencing rules** that only apply to the init flow (e.g., "no code until board is created")
-   - **Plan mode vs Kanban** clarifications that only matter during kickoff
    - **Anything else that logically fits the same pattern** — any section whose instructions only make sense during initial project setup and serve no purpose in an already-established project. Use judgment: if a section describes a one-time action that has already been completed, it's init content.
 
    **Keep everything that is ongoing:** code style rules, testing standards, tool preferences, per-session workflows (like daily board reviews), tech stack preferences, Docker rules, etc. If a section mixes init and ongoing content, extract and keep only the ongoing parts.
