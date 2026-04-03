@@ -1,0 +1,5 @@
+{
+  "name": "post-init",
+  "description": "Strip project initialization sections from CLAUDE.md after setup is complete",
+  "version": "1.0.0"
+}

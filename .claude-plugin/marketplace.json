@@ -20,6 +20,17 @@
       },
       "category": "development",
       "keywords": ["scaffold", "project", "setup"]
+    },
+    {
+      "name": "post-init",
+      "source": "./plugins/post-init",
+      "description": "Strip project initialization sections from CLAUDE.md after setup is complete",
+      "version": "1.0.0",
+      "author": {
+        "name": "voidmaindev"
+      },
+      "category": "development",
+      "keywords": ["cleanup", "init", "claude-md", "post-setup"]
     }
   ]
 }
