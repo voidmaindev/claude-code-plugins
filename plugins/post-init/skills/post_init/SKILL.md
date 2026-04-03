@@ -22,7 +22,14 @@ Clean up the active CLAUDE.md by removing all one-time project initialization se
    - **Hard sequencing rules** that only apply to the init flow (e.g., "no code until board is created")
    - **Anything else that logically fits the same pattern** — any section whose instructions only make sense during initial project setup and serve no purpose in an already-established project. Use judgment: if a section describes a one-time action that has already been completed, it's init content.
 
-   **Keep everything that is ongoing:** code style rules, testing standards, tool preferences, per-session workflows (like daily board reviews), tech stack preferences, Docker rules, etc. If a section mixes init and ongoing content, extract and keep only the ongoing parts.
+   **Keep everything that is ongoing — these are NOT init content:**
+   - Code style rules, testing standards, tool preferences, tech stack preferences, Docker rules
+   - Per-session workflows (like daily board reviews, session start protocols)
+   - Clarifications about how concepts or tools relate to each other (e.g., "plan mode file is not the same as the Kanban board") — these are permanent rules, not one-time setup
+   - Ongoing board maintenance and update procedures
+   - Any rule or clarification that applies to every session, not just the first one
+   
+   If a section mixes init and ongoing content, extract and keep only the ongoing parts.
 
 3. **Present findings to the user:**
    - List each identified init section by its heading and a one-line excerpt so the user can see what will be removed.
