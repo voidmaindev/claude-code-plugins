@@ -31,6 +31,17 @@
       },
       "category": "development",
       "keywords": ["cleanup", "init", "claude-md", "post-setup"]
+    },
+    {
+      "name": "go-review",
+      "source": "./plugins/go-review",
+      "description": "Review Go codebase as a senior software architect",
+      "version": "1.0.0",
+      "author": {
+        "name": "voidmaindev"
+      },
+      "category": "development",
+      "keywords": ["go", "golang", "review", "architecture", "code-quality"]
     }
   ]
 }
