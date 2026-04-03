@@ -26,8 +26,8 @@ Clean up the active CLAUDE.md by removing all one-time project initialization se
 
 3. **Present findings to the user:**
    - List each identified init section by its heading and a one-line excerpt so the user can see what will be removed.
-   - Ask: "These look like one-time project setup sections. Remove all of them from CLAUDE.md?"
-   - Wait for the user's response. Do NOT proceed without explicit confirmation.
+   - After listing all sections, use the AskUserQuestion tool to ask: "These look like one-time project setup sections. Remove all of them from CLAUDE.md?"
+   - Do NOT proceed without explicit confirmation via the dialog.
 
 4. **If the user confirms:**
    - Remove all identified init sections from the CLAUDE.md.
