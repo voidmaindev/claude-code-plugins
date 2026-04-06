@@ -1,0 +1,5 @@
+{
+  "name": "cicd-aws",
+  "description": "Set up GitHub Actions CI/CD that deploys a Docker Compose app to EC2 via SSH, with ALB + Route 53 + SG wiring",
+  "version": "1.0.0"
+}
