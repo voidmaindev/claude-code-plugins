@@ -46,13 +46,13 @@
     {
       "name": "cicd-aws",
       "source": "./plugins/cicd-aws",
-      "description": "Set up GitHub Actions CI/CD that deploys a Docker Compose app to EC2 via SSH, with ALB + Route 53 + SG wiring",
+      "description": "Set up GitHub Actions CI/CD that deploys a Docker Compose app to EC2 via SSH, with ALB + Cloudflare DNS + SG wiring",
       "version": "1.0.0",
       "author": {
         "name": "voidmaindev"
       },
       "category": "devops",
-      "keywords": ["cicd", "aws", "ec2", "docker-compose", "github-actions", "alb", "route53"]
+      "keywords": ["cicd", "aws", "ec2", "docker-compose", "github-actions", "alb", "cloudflare"]
     }
   ]
 }

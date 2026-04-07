@@ -1,11 +1,11 @@
 ---
 name: cicd_aws
-description: Set up GitHub Actions CI/CD that builds Docker Compose images, pushes to Docker Hub, and deploys to an existing AWS EC2 host behind an existing ALB with Route 53 subdomains
+description: Set up GitHub Actions CI/CD that builds Docker Compose images, pushes to Docker Hub, and deploys to an existing AWS EC2 host behind an existing ALB with Cloudflare subdomains
 user-invocable: true
 argument-hint: "[--reconfigure]"
 ---
 
-Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub, and deploy them over SSH to an existing AWS EC2 host that already has Docker installed. As a one-time setup step, also wire the project into an existing AWS ALB (target groups + host-header listener rules), create Route 53 alias records for one subdomain per exposed service, and add the necessary EC2 security-group ingress rules. The deploy phase makes ZERO AWS API calls — only SSH + Docker.
+Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub, and deploy them over SSH to an existing AWS EC2 host that already has Docker installed. As a one-time setup step, also wire the project into an existing AWS ALB (target groups + host-header listener rules), create Cloudflare proxied CNAME records for one subdomain per exposed service, and add the necessary EC2 security-group ingress rules. The deploy phase makes ZERO AWS or Cloudflare API calls — only SSH + Docker.
 
 **Config file:** `cicd_aws.config` (in repo root, visible filename, `key=value` format, auto-added to `.gitignore`)
 
@@ -26,7 +26,7 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
 - **GitHub Secrets written:** `EC2_SSH_KEY`, `EC2_HOST`, `EC2_USER`, `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`
 - **GitHub Variables written:** `DEPLOY_BRANCH`, `COMPOSE_PROJECT_NAME`, plus one `<SERVICE>_HOST_PORT` per service whose host port was resolved
 - **AWS resource tagging:** every AWS resource created by this skill is tagged `ManagedBy=cicd_aws_skill`, `Repo=<repo-name>`, `Service=<service-name>`
-- **Assumed-present AWS resources** (skill never creates or modifies these): EC2 instance with Docker, ALB with HTTPS:443 listener bound to a wildcard ACM cert covering the chosen domain, Route 53 hosted zone for that domain
+- **Assumed-present resources** (skill never creates or modifies these): EC2 instance with Docker, ALB with HTTPS:443 listener bound to a wildcard ACM cert covering the chosen domain, Cloudflare zone for that domain (added via the Cloudflare dashboard with NS delegation already in place at the registrar)
 - **Required AWS IAM permissions** (the user's local `aws` CLI principal must have these):
   ```
   sts:GetCallerIdentity
@@ -51,12 +51,10 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
   elasticloadbalancing:AddTags
   acm:DescribeCertificate
   acm:ListCertificates
-  route53:ListHostedZones
-  route53:GetHostedZone
-  route53:ListResourceRecordSets
-  route53:ChangeResourceRecordSets
-  route53:GetChange
   ```
+- **Cloudflare API base:** `https://api.cloudflare.com/client/v4`
+- **Cloudflare API token scope required:** `Zone:Zone:Read` AND `Zone:DNS:Edit`, scoped to the chosen zone (or to all zones on the account)
+- **Cloudflare default record state on every record this skill creates:** `type=CNAME`, `proxied=true`, `ttl=1` (auto, required when proxied)
 
 **Procedure:**
 
@@ -100,6 +98,13 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
       - Validate via `aws ec2 describe-regions --region-names <aws_region> --region <aws_region>`.
    5. **Docker Hub username:** → `<dockerhub_username>`
    6. **Docker Hub access token or password:** "Paste a Docker Hub access token (recommended) or your password. This is written to a GitHub Secret and never stored locally." → `<dockerhub_token>` (in memory only, never written to the config file).
+   7. **Cloudflare API token:** "Paste a Cloudflare API token with `Zone:Zone:Read` and `Zone:DNS:Edit` permission scoped to the zone you'll deploy into (or to all zones). The token is saved to the local `cicd_aws.config` file (which is in `.gitignore`) so re-runs don't have to re-prompt." → `<cf_api_token>`.
+      - On re-run mode, if `<existing_config>` already contains `cloudflare_api_token`, present that value as the default — the user can press Enter to accept it or paste a new one.
+      - Validate immediately (always, even when reusing the saved value):
+        ```bash
+        curl -fsS -H "Authorization: Bearer <cf_api_token>" https://api.cloudflare.com/client/v4/user/tokens/verify
+        ```
+      - STOP on non-success with `"Cloudflare token verification failed: <api error message>"`.
 
 5. **Verify SSH connection to EC2:**
    ```bash
@@ -151,18 +156,21 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
    - For each selected service that has multiple host ports, follow up with a single-select: `"Service '<name>' exposes ports X and Y. Which one is the HTTP entrypoint for external traffic?"`
    - Record per-service `<external_port>`.
 
-10. **Choose Route 53 hosted zone:**
-    - `aws route53 list-hosted-zones --query 'HostedZones[].{Id:Id,Name:Name,Private:Config.PrivateZone}' --output json --region <aws_region>`
-    - Filter out private zones (`Private == true`). Warn but continue if any were filtered.
-    - Present remaining zones via AskUserQuestion (single-select): `"Which hosted zone should the subdomains be created in?"`
-    - Strip the `/hostedzone/` prefix from the ID and the trailing `.` from the name. Record `<hosted_zone_id>` and `<hosted_zone_name>`.
-    - STOP if no public zones exist.
+10. **Choose Cloudflare zone:**
+    - ```bash
+      curl -fsS -H "Authorization: Bearer <cf_api_token>" \
+        "https://api.cloudflare.com/client/v4/zones?per_page=50&status=active"
+      ```
+    - Parse `result[]`, collect `{id, name}` for each active zone.
+    - STOP if zero zones returned: `"The Cloudflare token has no zones visible. Either the token is scoped to a zone you don't own, or no zones exist on the account."`
+    - Present the zones via AskUserQuestion (single-select): `"Which Cloudflare zone should the subdomains be created in?"`
+    - Record `<cloudflare_zone_id>` and `<cloudflare_zone_name>` (the bare zone name, no trailing dot).
 
 11. **Per-service subdomain assignment:**
     - For each service in `<exposed_services>`:
-      - Default subdomain = the service name lowercased with underscores replaced by hyphens (e.g. `api_v2` → `api-v2`). Default FQDN = `<default>.<hosted_zone_name>`.
+      - Default subdomain = the service name lowercased with underscores replaced by hyphens (e.g. `api_v2` → `api-v2`). Default FQDN = `<default>.<cloudflare_zone_name>`.
       - Free-text prompt: `"Subdomain for service '<service>'? [default: <default>] — full FQDN will be <fqdn>."`
-      - Empty answer → use the default. Bare label → append `.<hosted_zone_name>`. Full FQDN → verify it ends with `.<hosted_zone_name>`. Trim trailing dots and whitespace.
+      - Empty answer → use the default. Bare label → append `.<cloudflare_zone_name>`. Full FQDN → verify it ends with `.<cloudflare_zone_name>`. Trim trailing dots and whitespace.
       - Validate uniqueness within this run (no two services point at the same FQDN).
     - Record `<service_fqdn_map>`.
 
@@ -170,11 +178,11 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
     - `aws elbv2 describe-load-balancers --region <aws_region> --query 'LoadBalancers[?Type==\`application\` && Scheme==\`internet-facing\`].{Name:LoadBalancerName,Arn:LoadBalancerArn,DNS:DNSName,HostedZoneId:CanonicalHostedZoneId,VpcId:VpcId,SGs:SecurityGroups}' --output json`
     - v1 supports `internet-facing` ALBs only — STOP if none.
     - Single-select via AskUserQuestion: `"Which ALB should public traffic route through?"`
-    - Record `<alb_arn>`, `<alb_dns>`, `<alb_canonical_zone_id>` (the ALB's OWN hosted zone ID — needed for alias records, NOT the Route 53 zone), `<alb_vpc_id>`, `<alb_sg_ids>`.
+    - Record `<alb_arn>`, `<alb_dns>`, `<alb_vpc_id>`, `<alb_sg_ids>`.
 
 13. **Verify HTTPS listener exists and certificates cover all chosen FQDNs:**
     - `aws elbv2 describe-listeners --load-balancer-arn <alb_arn> --region <aws_region> --output json`
-    - Find the listener where `Port == 443` and `Protocol == HTTPS`. STOP if none with: `"ALB '<name>' has no HTTPS:443 listener. Create one with an ACM cert covering *.<zone_name> before re-running this skill."`
+    - Find the listener where `Port == 443` and `Protocol == HTTPS`. STOP if none with: `"ALB '<name>' has no HTTPS:443 listener. Create one with an ACM cert covering *.<cloudflare_zone_name> before re-running this skill."`
     - Record `<https_listener_arn>`.
     - Collect default certs from the listener AND all SNI certs via `aws elbv2 describe-listener-certificates --listener-arn <arn> --region <aws_region>`.
     - For each cert, `aws acm describe-certificate --certificate-arn <arn> --region <aws_region> --query 'Certificate.{D:DomainName,S:SubjectAlternativeNames}'`.
@@ -217,9 +225,10 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
       - Register EC2 instance `<id>:<resolved_port>`
       - Add SG ingress rule on `<ec2_primary_sg_id>` allowing TCP `<port>` from `<alb_primary_sg_id>`
       - Add listener rule (host-header `<fqdn>`) on the 443 listener
-      - Create Route 53 alias A-record `<fqdn>` → ALB
+    - **Cloudflare changes per exposed service `<name>`:**
+      - Create proxied CNAME `<fqdn>` → `<alb_dns>` in zone `<cloudflare_zone_name>`
     - **Compose file edits:** list which `ports:` entries are being rewritten with env var placeholders, and which 127.0.0.1 bindings are being auto-rewritten to 0.0.0.0.
-    - **De-exposure check:** if this is a re-run AND a previously-exposed service is no longer in the list, STOP and tell the user: `"Service '<name>' was previously exposed. v1 cannot un-expose; either keep it exposed or remove its AWS resources manually (delete the listener rule, target group, R53 record, and SG rule), then re-run."`
+    - **De-exposure check:** if this is a re-run AND a previously-exposed service is no longer in the list, STOP and tell the user: `"Service '<name>' was previously exposed. v1 cannot un-expose; either keep it exposed or remove its AWS + Cloudflare resources manually (delete the listener rule, target group, Cloudflare CNAME record, and SG rule), then re-run."`
     - Use AskUserQuestion: `"Apply these changes?"` → **Apply** / **Cancel**.
     - **Cancel** → STOP, zero changes.
 
@@ -234,7 +243,7 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
     - For each entry in `<port_map>`: `gh variable set <VAR_NAME> --body "<port>"`
     - STOP on any failure.
 
-18. **Apply: AWS resources** — for each exposed service, in this strict order. ALL `aws` commands include `--region <aws_region>` explicitly. Retry on `ThrottlingException` / `RequestLimitExceeded` 3 times with 2s/4s/8s backoff.
+18. **Apply: AWS resources and Cloudflare DNS** — for each exposed service, in this strict order. ALL `aws` commands include `--region <aws_region>` explicitly. Retry AWS calls on `ThrottlingException` / `RequestLimitExceeded` 3 times with 2s/4s/8s backoff. Retry Cloudflare calls on HTTP `429` 3 times with the same backoff.
 
     1. **Create target group.** Sanitize the name first: lowercase the `<repo>` and `<service>` portions, replace `_` with `-`, collapse consecutive `--` to one, trim leading/trailing `-`. If `<repo>-<service>-tg` exceeds 32 characters, truncate the `<repo>` portion (NOT the `-<service>-tg` suffix). Document any truncation in the summary.
        - **Idempotency check first:** `aws elbv2 describe-target-groups --names <tg_name> --region <aws_region> 2>/dev/null`. If it exists, verify the port and VPC match. If they match, reuse the ARN. If they don't match, STOP with `"Target group <name> already exists with different port/VPC. Resolve manually before re-running."`
@@ -294,17 +303,41 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
          ```
        - Record `<listener_rule_arn>`.
 
-    6. **Create Route 53 alias A record:**
-       - First check existing: `aws route53 list-resource-record-sets --hosted-zone-id <hosted_zone_id> --query 'ResourceRecordSets[?Name==\`<fqdn>.\`]' --region <aws_region>`
-       - If an A or AAAA record already exists for the FQDN AND it is NOT already an alias to this same ALB, STOP and ask the user. Do NOT silently overwrite.
-       - Build the change-batch JSON inline (no temp file):
-         ```json
-         {"Changes":[{"Action":"UPSERT","ResourceRecordSet":{"Name":"<fqdn>.","Type":"A","AliasTarget":{"HostedZoneId":"<alb_canonical_zone_id>","DNSName":"<alb_dns>","EvaluateTargetHealth":false}}}]}
+    6. **Create Cloudflare CNAME record (proxied):**
+       - **Idempotency check first.** If `<existing_config>` (re-run mode) has `cloudflare_record_id_<svc>`, fetch it directly to verify it still exists:
+         ```bash
+         curl -fsS -H "Authorization: Bearer <cf_api_token>" \
+           "https://api.cloudflare.com/client/v4/zones/<cloudflare_zone_id>/dns_records/<cloudflare_record_id_svc>"
          ```
-       - `aws route53 change-resource-record-sets --hosted-zone-id <hosted_zone_id> --change-batch '<inline-json>' --region <aws_region>`
-       - Capture `ChangeInfo.Id`. Optionally poll `aws route53 get-change --id <change_id>` until `Status == INSYNC` or 60 seconds elapse, then continue regardless.
+         If the lookup 404s, fall through to the by-name lookup below.
+       - Otherwise (or on 404 above), look up by name:
+         ```bash
+         curl -fsS -H "Authorization: Bearer <cf_api_token>" \
+           "https://api.cloudflare.com/client/v4/zones/<cloudflare_zone_id>/dns_records?type=CNAME&name=<fqdn>"
+         ```
+       - If a record exists AND its `content` is NOT `<alb_dns>`, STOP and ask the user before overwriting (mirror the existing safety rule). Do NOT silently overwrite.
+       - If a record exists with the right `content` and `proxied=true`, reuse its `id`.
+       - If a record exists with the right `content` but `proxied=false`, run a `PUT` to flip it to proxied (see PUT body below) and reuse the `id`.
+       - Otherwise, create a new record:
+         ```bash
+         curl -fsS -X POST \
+           -H "Authorization: Bearer <cf_api_token>" \
+           -H "Content-Type: application/json" \
+           "https://api.cloudflare.com/client/v4/zones/<cloudflare_zone_id>/dns_records" \
+           -d '{"type":"CNAME","name":"<fqdn>","content":"<alb_dns>","ttl":1,"proxied":true,"comment":"cicd_aws_skill <repo_name>/<service>"}'
+         ```
+       - On existing-but-stale (right name, wrong content, user approved overwrite): use
+         ```bash
+         curl -fsS -X PUT \
+           -H "Authorization: Bearer <cf_api_token>" \
+           -H "Content-Type: application/json" \
+           "https://api.cloudflare.com/client/v4/zones/<cloudflare_zone_id>/dns_records/<id>" \
+           -d '{"type":"CNAME","name":"<fqdn>","content":"<alb_dns>","ttl":1,"proxied":true,"comment":"cicd_aws_skill <repo_name>/<service>"}'
+         ```
+       - On any HTTP 4xx, surface the Cloudflare `errors[].message` verbatim and STOP.
+       - Record `<cloudflare_record_id_<svc>>` from the response `result.id`. Cloudflare propagates effectively instantly when proxied — no polling loop needed.
 
-19. **Apply: repo file changes** (only after AWS is happy):
+19. **Apply: repo file changes** (only after AWS and Cloudflare are happy):
     1. Write the rewritten `docker-compose.yml` (env var port placeholders, 127.0.0.1 → 0.0.0.0 rewrites).
     2. Write `.github/workflows/cicd.yml` from the template below. Substitute the actual service image names extracted from the parsed compose file into the build/push loop.
     3. Update `.gitignore`: if `cicd_aws.config` is not already listed, append it on its own line preceded by the comment `# cicd_aws skill local config`. **This MUST happen before `git add`.**
@@ -318,11 +351,11 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
     dockerhub_username=<>
     aws_region=<>
     aws_account_id=<>
-    hosted_zone_id=<>
-    hosted_zone_name=<>
+    cloudflare_api_token=<>
+    cloudflare_zone_id=<>
+    cloudflare_zone_name=<>
     alb_arn=<>
     alb_dns=<>
-    alb_canonical_zone_id=<>
     alb_vpc_id=<>
     alb_primary_sg_id=<>
     ec2_instance_id=<>
@@ -338,8 +371,9 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
     listener_rule_arn_<svc>=<arn>
     listener_rule_priority_<svc>=<int>
     host_port_<svc>=<port>
+    cloudflare_record_id_<svc>=<id>
     ```
-    Do NOT write `dockerhub_token` or SSH key contents into this file. Ever.
+    Do NOT write `dockerhub_token` or SSH key contents into this file. Ever. The `cloudflare_api_token` IS persisted here on purpose — Docker Hub has GitHub Secrets as its persistence layer, but Cloudflare has nowhere else to live, and this file is force-added to `.gitignore` before any `git add` (Step 19.3).
 
     **`.github/workflows/cicd.yml` template** — emit this verbatim, replacing `<...>` placeholders with the actual computed values. The `services` matrix is filled from the parsed compose file.
 
@@ -459,38 +493,43 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
     - Default branch: `stable`
     - Deploy branch: `<deploy_branch>`
     - Public URLs (per exposed service): `https://<fqdn>`
-    - AWS resources created (per service): target group ARN + listener rule priority + Route 53 record + SG ingress rule
+    - AWS resources created (per service): target group ARN + listener rule priority + SG ingress rule
+    - Cloudflare records created (per service): `<fqdn> → <alb_dns> [proxied]` in zone `<cloudflare_zone_name>`
     - GitHub Secrets set (by name only, never values)
     - GitHub Variables set (`name=value`)
     - Compose port rewrites (which entries became env vars)
     - Any 127.0.0.1 → 0.0.0.0 rewrites
-    - `cicd_aws.config` location and reminder it is gitignored
-    - Route 53 change status: `INSYNC` or `PENDING` (re-check with `aws route53 get-change --id <id>`)
+    - `cicd_aws.config` location and reminder it is gitignored (and that it now contains the Cloudflare API token — do NOT share or commit this file)
     - Next steps:
       - `"Run \`git checkout <deploy_branch> && git merge stable && git push\` to trigger the first real deploy."`
       - `"On push to \`stable\`: GitHub Actions builds the images (no push, no deploy) — this is your daily loop."`
       - `"On push to \`<deploy_branch>\`: GitHub Actions builds, pushes to Docker Hub, and deploys over SSH."`
-      - `"DNS may take 1–5 minutes to propagate before the public URLs resolve."`
+      - `"Cloudflare proxied records propagate effectively instantly. If a URL doesn't resolve right away, check the Cloudflare dashboard."`
       - `"To update any value: re-run \`/cicd_aws --reconfigure\` or edit \`cicd_aws.config\` and re-run \`/cicd_aws\`."`
+      - `"Records are created with Cloudflare proxy ON (orange cloud). If your app needs the real client IP, read it from the \`CF-Connecting-IP\` request header."`
+      - `"To prevent direct-IP bypass of Cloudflare's WAF, restrict the ALB security group's 443 inbound to Cloudflare's published IP ranges (https://www.cloudflare.com/ips/). The skill does not modify the ALB SG."`
+      - `"To control how Cloudflare talks to the ALB, set the zone's SSL mode to \`Full\` or \`Full (Strict)\` in the Cloudflare dashboard. The ALB has a valid ACM cert, so \`Full (Strict)\` works. Default Cloudflare SSL mode is \`Flexible\`, which only does HTTP to origin and will cause redirect loops."`
 
 **Rules:**
-- **NEVER** make AWS API calls at deploy time. The GitHub Actions workflow only does SSH + Docker. All AWS mutations happen once, locally, during skill execution.
-- **NEVER** store the Docker Hub token, SSH private key contents, or any other secret in `cicd_aws.config`. Secrets live only in GitHub Secrets.
+- **NEVER** make AWS or Cloudflare API calls at deploy time. The GitHub Actions workflow only does SSH + Docker. All AWS and Cloudflare mutations happen once, locally, during skill execution.
+- **NEVER** store the Docker Hub token, SSH private key contents, or any GitHub-Secret-managed credential in `cicd_aws.config`. Those live only in GitHub Secrets. The Cloudflare API token IS an exception — it is persisted in `cicd_aws.config` because it has no other persistence layer, and the file is force-added to `.gitignore` before any `git add`.
+- **NEVER** put the Cloudflare API token in any GitHub Secret, GitHub Variable, `.env` file, or any file other than `cicd_aws.config`. It must never leave the local machine.
 - **NEVER** touch ACM certificates. If a cert is missing or doesn't cover a chosen FQDN, STOP and tell the user.
-- **NEVER** create or modify the ALB itself, its HTTPS:443 listener itself, or the hosted zone itself. Only create rules, target groups, record sets, and security group entries underneath existing resources.
-- **NEVER** overwrite an existing Route 53 A/AAAA record that isn't already an alias to the chosen ALB — STOP and ask.
+- **NEVER** create or modify the ALB itself, its HTTPS:443 listener itself, or the Cloudflare zone settings themselves (SSL mode, page rules, WAF, Universal SSL, etc.). Only create rules, target groups, DNS records, and security group entries underneath existing resources.
+- **NEVER** mutate the ALB's own security group inbound rules to lock it down to Cloudflare IPs. The skill only touches the EC2 SG (allowing the ALB SG inbound). Locking down the ALB SG to Cloudflare's published IP ranges is documented as a manual follow-up in the final summary.
+- **NEVER** overwrite an existing Cloudflare DNS record whose `content` is not already `<alb_dns>` for the chosen ALB — STOP and ask.
 - **NEVER** rename `main` ↔ `master`. Use whichever is present.
 - **NEVER** push to `<deploy_branch>` automatically. The user merges manually when ready.
 - **NEVER** print SSH key contents, Docker Hub tokens, or any secret value to the terminal. When `gh secret set` needs a file, pass it via `--body-file`.
-- **NEVER** un-expose a previously-exposed service in v1 — STOP and tell the user to remove the AWS resources manually.
+- **NEVER** un-expose a previously-exposed service in v1 — STOP and tell the user to remove the AWS and Cloudflare resources manually.
 - **NEVER** silently re-allocate a previously-used host port; warn first.
 - **NEVER** commit `cicd_aws.config` — it must be in `.gitignore` before the first `git add`.
 - **NEVER** use `-uall` on `git status`.
 - **NEVER** proceed if any pre-flight check fails. Report all failures before stopping.
 - **ALWAYS** pass `--region <aws_region>` explicitly on every AWS call.
 - **ALWAYS** tag AWS resources created by this skill with `ManagedBy=cicd_aws_skill, Repo=<repo_name>, Service=<service>`.
-- **ALWAYS** make AWS mutations idempotent: describe first, skip if matching, STOP if mismatched.
-- **ALWAYS** verify SSH, Docker Hub, AWS identity, and ACM cert coverage BEFORE any mutating action.
+- **ALWAYS** make AWS and Cloudflare mutations idempotent: describe/lookup first, skip if matching, STOP if mismatched.
+- **ALWAYS** verify SSH, Docker Hub, AWS identity, Cloudflare token, and ACM cert coverage BEFORE any mutating action.
 - **ALWAYS** show the full plan (Step 16) and get explicit user confirmation before applying anything.
 - **ALWAYS** preserve existing port allocations on re-run unless the old port is actually taken on the EC2.
 - **ALWAYS** sanitize target group names: lowercase, `_` → `-`, collapse `--`, trim, truncate to 32 chars.
