@@ -1,5 +1,5 @@
 ---
-name: cicd_aws
+name: cicd-aws
 description: Set up GitHub Actions CI/CD that builds Docker Compose images, pushes to Docker Hub, and deploys to an existing AWS EC2 host behind an existing ALB with Cloudflare subdomains
 user-invocable: true
 argument-hint: "[--reconfigure]"
@@ -280,7 +280,7 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
        ```bash
        aws ec2 authorize-security-group-ingress \
          --group-id <ec2_primary_sg_id> \
-         --ip-permissions 'IpProtocol=tcp,FromPort=<port>,ToPort=<port>,UserIdGroupPairs=[{GroupId=<alb_primary_sg_id>,Description="cicd_aws <repo>/<service>"}]' \
+         --ip-permissions 'IpProtocol=tcp,FromPort=<port>,ToPort=<port>,UserIdGroupPairs=[{GroupId=<alb_primary_sg_id>,Description="cicd-aws <repo>/<service>"}]' \
          --region <aws_region>
        ```
        On `InvalidPermission.Duplicate`, log `"already exists, skipping"` and continue.
@@ -340,7 +340,7 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
 19. **Apply: repo file changes** (only after AWS and Cloudflare are happy):
     1. Write the rewritten `docker-compose.yml` (env var port placeholders, 127.0.0.1 → 0.0.0.0 rewrites).
     2. Write `.github/workflows/cicd.yml` from the template below. Substitute the actual service image names extracted from the parsed compose file into the build/push loop.
-    3. Update `.gitignore`: if `cicd_aws.config` is not already listed, append it on its own line preceded by the comment `# cicd_aws skill local config`. **This MUST happen before `git add`.**
+    3. Update `.gitignore`: if `cicd_aws.config` is not already listed, append it on its own line preceded by the comment `# cicd-aws skill local config`. **This MUST happen before `git add`.**
     4. Write `cicd_aws.config` using the schema below.
 
     **`cicd_aws.config` schema** (key=value, one per line, no quoting, arrays use `,` separator):
@@ -378,7 +378,7 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
     **`.github/workflows/cicd.yml` template** — emit this verbatim, replacing `<...>` placeholders with the actual computed values. The `services` matrix is filled from the parsed compose file.
 
     ```yaml
-    name: cicd_aws
+    name: cicd-aws
 
     on:
       push:
@@ -479,7 +479,7 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
     1. `git checkout -B stable` (force-move local `stable` to current HEAD).
     2. Verify `cicd_aws.config` is in `.gitignore` (re-read the file). If not, STOP — never commit the config file.
     3. `git add .github/workflows/cicd.yml docker-compose.yml .gitignore` (deliberately do NOT `git add cicd_aws.config`).
-    4. `git commit -m "chore(ci): add cicd_aws deployment pipeline"`
+    4. `git commit -m "chore(ci): add cicd-aws deployment pipeline"`
     5. `git push -u origin stable`
     6. If `<create_deploy_branch>`:
        - `git branch <deploy_branch> stable`
@@ -505,7 +505,7 @@ Wire up GitHub Actions to build Docker Compose services, push them to Docker Hub
       - `"On push to \`stable\`: GitHub Actions builds the images (no push, no deploy) — this is your daily loop."`
       - `"On push to \`<deploy_branch>\`: GitHub Actions builds, pushes to Docker Hub, and deploys over SSH."`
       - `"Cloudflare proxied records propagate effectively instantly. If a URL doesn't resolve right away, check the Cloudflare dashboard."`
-      - `"To update any value: re-run \`/cicd_aws --reconfigure\` or edit \`cicd_aws.config\` and re-run \`/cicd_aws\`."`
+      - `"To update any value: re-run \`/cicd-aws --reconfigure\` or edit \`cicd_aws.config\` and re-run \`/cicd-aws\`."`
       - `"Records are created with Cloudflare proxy ON (orange cloud). If your app needs the real client IP, read it from the \`CF-Connecting-IP\` request header."`
       - `"To prevent direct-IP bypass of Cloudflare's WAF, restrict the ALB security group's 443 inbound to Cloudflare's published IP ranges (https://www.cloudflare.com/ips/). The skill does not modify the ALB SG."`
       - `"To control how Cloudflare talks to the ALB, set the zone's SSL mode to \`Full\` or \`Full (Strict)\` in the Cloudflare dashboard. The ALB has a valid ACM cert, so \`Full (Strict)\` works. Default Cloudflare SSL mode is \`Flexible\`, which only does HTTP to origin and will cause redirect loops."`

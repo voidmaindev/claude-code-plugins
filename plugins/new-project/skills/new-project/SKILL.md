@@ -1,5 +1,5 @@
 ---
-name: new_project
+name: new-project
 description: Scaffold a new project with GitHub repo, CLAUDE.md, and bash shortcut
 user-invocable: true
 argument-hint: "<project name> [--public]"

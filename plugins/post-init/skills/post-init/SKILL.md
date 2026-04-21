@@ -1,5 +1,5 @@
 ---
-name: post_init
+name: post-init
 description: Strip project initialization sections from CLAUDE.md after setup is complete
 user-invocable: true
 ---

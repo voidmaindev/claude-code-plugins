@@ -1,5 +1,5 @@
 ---
-name: go_review
+name: go-review
 description: Review Go codebase as a senior software architect
 user-invocable: true
 argument-hint: "[path or file]"
