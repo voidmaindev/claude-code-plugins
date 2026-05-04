@@ -1,0 +1,5 @@
+{
+  "name": "branching",
+  "description": "Lock the repo to a hardgated branch+PR workflow — ensure stable & main branches, set stable as default, restrict CI/CD to main, and write the policy into CLAUDE.md",
+  "version": "1.0.0"
+}
