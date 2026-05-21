@@ -1,0 +1,5 @@
+{
+  "name": "normalize",
+  "description": "Normalize an existing project — replace CLAUDE.md with the canonical default, create the GitHub Projects Kanban board on the current repo, then strip init sections",
+  "version": "1.0.0"
+}

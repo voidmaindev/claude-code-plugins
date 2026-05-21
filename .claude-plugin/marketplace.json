@@ -64,6 +64,17 @@
       },
       "category": "development",
       "keywords": ["branching", "git", "workflow", "pr", "policy", "claude-md", "default-branch"]
+    },
+    {
+      "name": "normalize",
+      "source": "./plugins/normalize",
+      "description": "Normalize an existing project — replace CLAUDE.md with the canonical default, create the GitHub Projects Kanban board on the current repo, then strip init sections",
+      "version": "1.0.0",
+      "author": {
+        "name": "voidmaindev"
+      },
+      "category": "development",
+      "keywords": ["normalize", "claude-md", "kanban", "existing-project", "post-setup"]
     }
   ]
 }
