@@ -27,11 +27,10 @@ contains invalid JSON. Re-running it (e.g. to switch themes) simply re-applies t
    Install Node.js and re-run this skill." and STOP. Do not modify anything.
 
 2. **Ask which theme to use.** The bars need to know whether the terminal is light or dark.
-   Pick a sensible default first: read the `theme` value from `~/.claude/settings.json` — if
-   it contains "light" (and isn't "auto"), default to **light**, otherwise default to
-   **dark**. Then use the **AskUserQuestion** tool to ask "Do you use a light or dark
-   terminal background?" with options **Dark** and **Light**, putting the detected default
-   first and marked "(Recommended)". The user's answer (`light` or `dark`) is authoritative.
+   Use the **AskUserQuestion** tool to ask "Do you use a light or dark terminal background?"
+   with two options, **Dark** and **Light**. Present them neutrally — do **not** mark either
+   as a default or "(Recommended)"; let the user decide. The user's answer (`light` or
+   `dark`) is authoritative.
 
 3. **Run the bundled installer with the chosen theme.** Execute the installer that ships
    with this skill, using the `CLAUDE_SKILL_DIR` environment variable to locate it (it

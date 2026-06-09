@@ -40,7 +40,11 @@ const c = (code, s) => `\x1b[${code}m${s}\x1b[0m`;
 const cyan = (s) => c('36', s);
 const magenta = (s) => c('35', s);
 const yellow = (s) => c('33', s);
-const dim = (s) => c('2', s);
+// "dim" secondary text (the ctx/5h/7d labels, brackets, reset times). The ANSI dim
+// attribute renders almost invisibly on a dark terminal, so dark mode uses an explicit
+// readable mid-grey instead; light mode keeps the original dim attribute unchanged.
+const DIM = THEME === 'dark' ? '38;5;246' : '2';
+const dim = (s) => c(DIM, s);
 const bold = (s) => c('1', s);
 
 // Severity bucket for a percentage — keys into the active palette below.
