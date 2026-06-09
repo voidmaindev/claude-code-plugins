@@ -1,9 +1,15 @@
 #!/usr/bin/env node
 // Claude Code global status line.
-// Renders: <folder>  <branch>  <model> [<effort>] [<bar with pct centered inside>]
+// Renders: <folder>  <branch>  <model> [<effort>]  ctx[<bar>]  5h[<bar>]<reset>  7d[<bar>]<reset>
 // Input: Claude Code statusLine JSON on stdin.
+//
+// Theme: the usage bars use a light or dark palette. The active theme is NOT available on
+// stdin, so it is resolved (in order) from: the CLAUDE_STATUSLINE_THEME env var, the
+// ~/.claude/statusline.theme marker file written by the installer, else 'dark'.
 
 const { execSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 
 // --- config ---
@@ -14,6 +20,21 @@ const EMPTY = '░';
 const WARM_GREEN = '78;145;40'; // RGB for the green fill + chip — a warm, lime-leaning green
 const SEP = '  '; // two spaces between leading segments
 
+// --- theme detection ---
+function detectTheme() {
+  const env = (process.env.CLAUDE_STATUSLINE_THEME || '').trim().toLowerCase();
+  if (env === 'light' || env === 'dark') return env;
+  try {
+    const marker = fs
+      .readFileSync(path.join(os.homedir(), '.claude', 'statusline.theme'), 'utf8')
+      .trim()
+      .toLowerCase();
+    if (marker === 'light' || marker === 'dark') return marker;
+  } catch { /* no marker file — fall through */ }
+  return 'dark';
+}
+const THEME = detectTheme();
+
 // --- ansi helpers ---
 const c = (code, s) => `\x1b[${code}m${s}\x1b[0m`;
 const cyan = (s) => c('36', s);
@@ -22,45 +43,62 @@ const yellow = (s) => c('33', s);
 const dim = (s) => c('2', s);
 const bold = (s) => c('1', s);
 
-function barColorCode(pct) {
-  if (pct >= 80) return '31'; // red
-  if (pct >= 50) return '33'; // yellow
-  return '32';                // green
+// Severity bucket for a percentage — keys into the active palette below.
+function barSeverity(pct) {
+  if (pct >= 80) return 'red';
+  if (pct >= 50) return 'yellow';
+  return 'green';
 }
 
-// Chip styles per bar color, as [filledBg, filledFg, emptyBg, emptyFg]. Label cells over
-// the FILLED region get a solid bar-color background; cells past the fill point get a pale
-// (256-color) tint with dark text, so the chip doesn't read as "filled" where it isn't.
-function chipColors(colorCode) {
-  if (colorCode === '33') return ['43', '30', '48;5;229', '30']; // yellow: solid / pale
-  if (colorCode === '31') return ['41', '97', '48;5;224', '30']; // red:    solid / pale
-  return [`48;2;${WARM_GREEN}`, '97', '48;5;156', '30'];         // green:  warm solid / pale lime
+// Per-severity bar styling, split by theme. Each entry defines:
+//   block.fill / block.empty : fg color for the █ / ░ track glyphs
+//   chip.fill / chip.empty   : [bg, fg] for percentage digits sitting over the filled part
+//                              of the bar vs. past the fill point (bg '' = no background)
+// Light keeps the original look: a pale chip on a near-white terminal, with the track in the
+// bar colour. Dark drops the pale backgrounds (they glare on a dark terminal) in favour of
+// plain colour-coded digits over a dim-grey track, with a solid chip only over the fill.
+const DARK_TRACK = '38;5;240'; // dim grey for the empty ░ track on a dark terminal
+const PALETTES = {
+  light: {
+    green:  { block: { fill: `38;2;${WARM_GREEN}`, empty: `38;2;${WARM_GREEN}` }, chip: { fill: [`48;2;${WARM_GREEN}`, '97'], empty: ['48;5;156', '30'] } },
+    yellow: { block: { fill: '33', empty: '33' },                                 chip: { fill: ['43', '30'],                  empty: ['48;5;229', '30'] } },
+    red:    { block: { fill: '31', empty: '31' },                                 chip: { fill: ['41', '97'],                  empty: ['48;5;224', '30'] } },
+  },
+  dark: {
+    green:  { block: { fill: '38;2;124;191;71', empty: DARK_TRACK }, chip: { fill: [`48;2;${WARM_GREEN}`, '231'], empty: ['', '38;2;124;191;71'] } },
+    yellow: { block: { fill: '38;5;179',        empty: DARK_TRACK }, chip: { fill: ['48;5;136', '232'],           empty: ['', '38;5;179'] } },
+    red:    { block: { fill: '38;5;167',        empty: DARK_TRACK }, chip: { fill: ['48;5;124', '231'],           empty: ['', '38;5;167'] } },
+  },
+};
+
+// Build an SGR escape from a list of codes, dropping empty ones (so a missing background
+// doesn't leave a stray leading ';').
+function sgr(codes, s) {
+  return `\x1b[${codes.filter(Boolean).join(';')}m${s}\x1b[0m`;
 }
 
 // Renders a progress bar with the percentage centered inside it. The label is drawn as a
-// chip that follows the fill: cells over the filled part use the solid bar color, cells
-// past the fill point use a pale tint so the chip never looks more filled than the bar is.
-function renderBar(pct, width, colorCode) {
+// chip that follows the fill: cells over the filled part use the solid bar colour, cells
+// past the fill point use the theme's "empty" chip so the chip never looks more filled
+// than the bar is.
+function renderBar(pct, width, sev) {
+  const style = PALETTES[THEME][sev];
   const label = `${pct}%`;
   // A label centers exactly only when the bar width shares its parity. The widths are
   // odd, so for even-length labels (1-digit like "9%", or "100%") shrink the bar by one.
   const w = label.length % 2 === 0 ? width - 1 : width;
   const filled = Math.round((pct / 100) * w);
   const start = Math.floor((w - label.length) / 2);
-  const [fBg, fFg, eBg, eFg] = chipColors(colorCode);
-  // blocks share the chip's green, so warm them too — otherwise the fill would seam.
-  const blockFg = colorCode === '32' ? `38;2;${WARM_GREEN}` : colorCode;
   let cells = '';
   for (let i = 0; i < w; i++) {
     const inLabel = i >= start && i < start + label.length;
     const isFilled = i < filled;
     if (inLabel) {
       const ch = label[i - start];
-      cells += isFilled
-        ? `\x1b[${fBg};${fFg};1m${ch}\x1b[0m`  // over fill: solid bar-color chip
-        : `\x1b[${eBg};${eFg};1m${ch}\x1b[0m`; // past fill: pale chip, reads as empty
+      const [bg, fg] = isFilled ? style.chip.fill : style.chip.empty;
+      cells += sgr([bg, fg, '1'], ch);
     } else {
-      cells += c(blockFg, isFilled ? FILLED : EMPTY);
+      cells += c(isFilled ? style.block.fill : style.block.empty, isFilled ? FILLED : EMPTY);
     }
   }
   return `${dim('[')}${cells}${dim(']')}`;
@@ -81,7 +119,7 @@ function fmtDuration(secs) {
 function renderWindow(win, label) {
   if (!win || typeof win.used_percentage !== 'number') return '';
   const used = Math.round(Math.max(0, Math.min(100, win.used_percentage)));
-  const bar = renderBar(used, QUOTA_BAR_WIDTH, barColorCode(used));
+  const bar = renderBar(used, QUOTA_BAR_WIDTH, barSeverity(used));
   let seg = `${dim(label)}${bar}`;
   if (typeof win.resets_at === 'number') {
     const left = fmtDuration(win.resets_at - Math.floor(Date.now() / 1000));
@@ -134,7 +172,7 @@ function render(data) {
   if (pct == null) pct = size ? (used / size) * 100 : 0;
   pct = Math.max(0, Math.min(100, Math.round(pct)));
 
-  main += `  ${dim('ctx')}${renderBar(pct, BAR_WIDTH, barColorCode(pct))}`;
+  main += `  ${dim('ctx')}${renderBar(pct, BAR_WIDTH, barSeverity(pct))}`;
 
   const segments = [...leading, main];
 

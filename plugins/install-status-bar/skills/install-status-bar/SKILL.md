@@ -9,9 +9,15 @@ directory so it renders in **every** Claude Code session, across all projects. T
 the bundled `statusline.js` into `~/.claude/statusline.js` and wires it up via the
 `statusLine` key in `~/.claude/settings.json`, mirroring the maintainer's setup exactly.
 
+The usage bars come in a **light** and a **dark** palette. The active theme cannot be read
+from the status line's stdin payload (Claude Code does not pass it), and the `theme` value
+in `settings.json` may be `"auto"` or may not match the actual terminal background — so this
+skill **asks the user** which they use and records the choice in `~/.claude/statusline.theme`
+(which the script reads at render time).
+
 The installer is safe and idempotent: it backs up any files it replaces (`*.bak`),
 preserves every other key in `settings.json`, and refuses to run if `settings.json`
-contains invalid JSON. Re-running it simply re-applies the same configuration.
+contains invalid JSON. Re-running it (e.g. to switch themes) simply re-applies the config.
 
 **Procedure:**
 
@@ -20,27 +26,38 @@ contains invalid JSON. Re-running it simply re-applies the same configuration.
    found, tell the user: "This status line requires Node.js, which isn't on your PATH.
    Install Node.js and re-run this skill." and STOP. Do not modify anything.
 
-2. **Run the bundled installer.** Execute the installer that ships with this skill, using
-   the `CLAUDE_SKILL_DIR` environment variable to locate it (it points to this skill's own
-   directory):
-   - bash / macOS / Linux: `node "$CLAUDE_SKILL_DIR/install.js"`
-   - Windows PowerShell: `node "$env:CLAUDE_SKILL_DIR\install.js"`
+2. **Ask which theme to use.** The bars need to know whether the terminal is light or dark.
+   Pick a sensible default first: read the `theme` value from `~/.claude/settings.json` — if
+   it contains "light" (and isn't "auto"), default to **light**, otherwise default to
+   **dark**. Then use the **AskUserQuestion** tool to ask "Do you use a light or dark
+   terminal background?" with options **Dark** and **Light**, putting the detected default
+   first and marked "(Recommended)". The user's answer (`light` or `dark`) is authoritative.
 
-   Pick the form that matches the current shell. The installer:
+3. **Run the bundled installer with the chosen theme.** Execute the installer that ships
+   with this skill, using the `CLAUDE_SKILL_DIR` environment variable to locate it (it
+   points to this skill's own directory), passing the theme as the first argument:
+   - bash / macOS / Linux: `node "$CLAUDE_SKILL_DIR/install.js" <light|dark>`
+   - Windows PowerShell: `node "$env:CLAUDE_SKILL_DIR\install.js" <light|dark>`
+
+   Pick the form that matches the current shell, substituting the chosen theme. The
+   installer:
    - resolves the running user's home directory and ensures `~/.claude` exists,
    - copies the bundled `statusline.js` to `~/.claude/statusline.js` (backing up an
      existing, different copy to `statusline.js.bak`),
+   - writes the chosen theme to `~/.claude/statusline.theme` (read by the script at render
+     time, since the theme isn't available on stdin),
    - merges a `statusLine` block into `~/.claude/settings.json` with an **absolute** path
      to the copied script (the `statusLine.command` field does not expand `~` or env vars,
      so the absolute path is computed at install time), backing up the prior
      `settings.json` to `settings.json.bak`.
 
-3. **Report the result.** Show the installer's output (the script path, the settings path,
+4. **Report the result.** Show the installer's output (theme, script path, settings path,
    and the exact `command` written). Mention any `.bak` backups that were created. Tell the
-   user the status line now applies to all future Claude Code sessions, and that the
-   **current** session may need to be restarted before the bar appears.
+   user the status line now applies to all future Claude Code sessions, that the **current**
+   session may need to be restarted before the bar appears, and that re-running this skill
+   lets them switch themes.
 
-4. **Explain what the bar shows** so the user knows what to expect. From left to right:
+5. **Explain what the bar shows** so the user knows what to expect. From left to right:
    - current **folder** name (bold cyan),
    - **git branch** (magenta), when inside a repo,
    - **model** name with any trailing `(… context)` suffix stripped (cyan),
