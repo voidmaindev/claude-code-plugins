@@ -75,6 +75,17 @@
       },
       "category": "development",
       "keywords": ["normalize", "claude-md", "kanban", "existing-project", "post-setup"]
+    },
+    {
+      "name": "install-status-bar",
+      "source": "./plugins/install-status-bar",
+      "description": "Install the voidmaindev Claude Code status line at the user level (applies to every session)",
+      "version": "1.0.0",
+      "author": {
+        "name": "voidmaindev"
+      },
+      "category": "development",
+      "keywords": ["statusline", "status-bar", "ui", "install", "user-settings"]
     }
   ]
 }

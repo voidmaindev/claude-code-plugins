@@ -1,0 +1,5 @@
+{
+  "name": "install-status-bar",
+  "description": "Install the voidmaindev Claude Code status line at the user level (applies to every session)",
+  "version": "1.0.0"
+}

@@ -11,6 +11,8 @@ Claude Code plugin marketplace by voidmaindev.
 /plugin install go-review@voidmaindev-claude-code-plugins
 /plugin install cicd-aws@voidmaindev-claude-code-plugins
 /plugin install branching@voidmaindev-claude-code-plugins
+/plugin install normalize@voidmaindev-claude-code-plugins
+/plugin install install-status-bar@voidmaindev-claude-code-plugins
 ```
 
 ## Available Plugins
@@ -22,3 +24,5 @@ Claude Code plugin marketplace by voidmaindev.
 | `go-review` | Review Go codebase as a senior software architect |
 | `cicd-aws` | Set up GitHub Actions CI/CD that deploys a Docker Compose app to EC2 via SSH, with ALB + Cloudflare DNS + SG wiring |
 | `branching` | Lock the repo to a hardgated branch+PR workflow — ensure stable & main branches, set stable as default, restrict CI/CD to main, and write the policy into CLAUDE.md |
+| `normalize` | Normalize an existing project — replace CLAUDE.md with the canonical default, create the GitHub Projects Kanban board on the current repo, then strip init sections |
+| `install-status-bar` | Install the voidmaindev Claude Code status line at the user level (applies to every session) |
