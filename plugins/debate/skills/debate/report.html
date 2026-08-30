@@ -1,5 +1,5 @@
 <!--
-  debate skill — report template (dashboard layout).
+  debate skill — report template (dashboard + diagrams).
   Drop this comment from the output, fill the placeholders below, change nothing else.
   This file is an Artifact-style fragment (title + styles + content, no doctype/html/head/body).
   The local copy is the same content wrapped in a full document: everything above the
@@ -8,60 +8,81 @@
   on the root element (the Artifact viewer's explicit dark setting); the OS colour-scheme
   preference is deliberately ignored, so the local file always opens light.
 
-  ── Text & numbers ─────────────────────────────────────────────────────────────
-  {{TITLE}}               Short name of the idea, plain text (also the page name).
-  {{DATE}}                YYYY-MM-DD.
-  {{META_CHIPS}}          <span class="chip">…</span> per fact: language, points target, model.
-  {{IDEA}}                The idea exactly as given, HTML-escaped (rendered pre-wrap).
-  {{BRIEF}}               <h3>Restatement</h3><p>…</p><h3>Assumptions</h3><ul><li>…</li></ul>
-                          <h3>Context</h3><ul><li>…</li></ul>
-  {{VERDICT_CLASS}}       go | conditions | rethink | nogo
-  {{VERDICT}}             Go | Go with conditions | Rethink | No-go
-  {{VERDICT_LINE}}        One sentence: the single reason that decided it.
-  {{CONFIDENCE}}          low | medium | high   (used twice: text and data attribute)
-  {{REASONING}}           <p>…</p> ×2–4
-  {{DECISIVE}}            <a class="id p" href="#R1-P1">R1-P1</a> <a class="id c" href="#R1-C2">R1-C2</a>
-  {{CONDITIONS}}          <li>…</li> per condition/mitigation (or <li class="empty">None.</li>)
-  {{OPEN_QUESTIONS}}      <li>…</li> per open question (or <li class="empty">None.</li>)
-  {{PROS_STANDING}}       integer: P points with status conceded/stands/narrowed/contested
-  {{CONS_STANDING}}       integer: C points likewise
-  {{PROS_TOTAL}}          integer: P points raised in total
-  {{CONS_TOTAL}}          integer: C points raised in total
-  {{CONCEDED_BY_CRITIC}}  integer: P points the Critic conceded
-  {{CONCEDED_BY_ADVOCATE}} integer: C points the Advocate conceded
-  {{CONTESTED_COUNT}}     integer, both sides
-  {{WITHDRAWN_COUNT}}     integer, both sides
-  {{ROUNDS_RUN}}          integer     {{ROUNDS_TOTAL}}  integer
-  {{STOP_LABEL}}          completed | stopped early: converged | stopped early: blocker accepted | stopped by user
-  {{RUN_NOTE}}            Footer sentence, e.g. "5 rounds requested, 3 run — stopped early: converged."
+  ── Text ────────────────────────────────────────────────────────────────────────
+  {{TITLE}}            Short name of the idea, plain text (also the page name).
+  {{DATE}}             YYYY-MM-DD.
+  {{META_CHIPS}}       <span class="chip">…</span> per fact: language, points target, model.
+  {{IDEA}}             The idea exactly as given, HTML-escaped (rendered pre-wrap).
+  {{BRIEF}}            <h3>Restatement</h3><p>…</p><h3>Assumptions</h3><ul><li>…</li></ul>
+                       <h3>Context</h3><ul><li>…</li></ul>
+  {{VERDICT_CLASS}}    go | conditions | rethink | nogo
+  {{VERDICT}}          Go | Go with conditions | Rethink | No-go
+  {{VERDICT_LINE}}     One sentence: the single reason that decided it.
+  {{CONFIDENCE}}       low | medium | high  (used twice: text and data attribute)
+  {{REASONING}}        <p>…</p> ×2–4
+  {{DECISIVE}}         <a class="id p" href="#R1-P1">R1-P1</a> <a class="id c" href="#R1-C2">R1-C2</a>
+  {{CONDITIONS}}       <li>…</li> per condition (or <li class="empty">None.</li>)
+  {{OPEN_QUESTIONS}}   <li>…</li> per open question (or <li class="empty">None.</li>)
+  {{RUN_NOTE}}         Footer sentence, e.g. "5 rounds requested, 3 run — stopped early: converged."
 
-  ── Timeline: one <li> per round ────────────────────────────────────────────────
-  {{TIMELINE}}
-    <li class="rnode">
-      <div class="rlabel">R1</div>
-      <div class="rbars">
-        <span class="rb c" style="--n:4"><i></i>4 objections</span>
-        <span class="rb p" style="--n:3"><i></i>3 pros</span>
+  ── Numbers (plain integers) ────────────────────────────────────────────────────
+  {{PROS_STANDING}} {{CONS_STANDING}}     points with status conceded/stands/narrowed/contested
+  {{PROS_TOTAL}} {{CONS_TOTAL}}           points raised in total, per side
+  {{CONCEDED_BY_CRITIC}}                  P points the Critic conceded
+  {{CONCEDED_BY_ADVOCATE}}                C points the Advocate conceded
+  {{CONTESTED_COUNT}} {{WITHDRAWN_COUNT}} both sides together
+  {{ROUNDS_RUN}} {{ROUNDS_TOTAL}}
+  {{STOP_LABEL}}       completed | stopped early: converged | stopped early: blocker accepted | stopped by user
+  {{P_CONCEDED}} {{P_STANDS}} {{P_NARROWED}} {{P_CONTESTED}} {{P_WITHDRAWN}}   P points per final status
+  {{C_CONCEDED}} {{C_STANDS}} {{C_NARROWED}} {{C_CONTESTED}} {{C_WITHDRAWN}}   C points per final status
+  {{ROUND_MAX}}        the largest "points raised in one turn" across the debate (>= 1); scales the bar chart
+
+  ── Bar chart: one <li> per round run ──────────────────────────────────────────
+  {{ROUND_COLUMNS}}
+    <li class="col">
+      <div class="bars">
+        <i class="bar c" style="--n:4" tabindex="0" title="R1: 4 objections raised"><b>4</b></i>
+        <i class="bar p" style="--n:3" tabindex="0" title="R1: 3 pro arguments raised"><b>3</b></i>
       </div>
-      <div class="rmeta">1 conceded · 0 withdrawn</div>
+      <div class="xl">R1</div>
+      <div class="xs">4 obj · 3 pro · 1 conceded</div>       ← always spell the numbers out here too
     </li>
 
-  ── Argument cards ──────────────────────────────────────────────────────────────
-  {{PROS}} / {{CONS}}    one <li> per point, ordered conceded → stands → narrowed → contested:
-    <li class="card advocate" data-status="conceded">           (class critic for cons)
+  ── Sequence diagram: one <li> per turn (opening, every later turn, both closings) ──
+  {{SEQUENCE}}
+    <li class="seq critic">                                   (class advocate for Advocate turns)
+      <div class="node speaker"><b>R1 · Critic</b>
+        <span class="verb raised">raised R1-C1…C4</span>       verb: raised | concede | partial | rebut | accept | defend | hold | closing
+        <span class="verb rebut">rebut R1-P2</span></div>
+      <i class="conn a"></i>
+      <div class="relay">relayed · closed 2</div>              what the moderator carried: "relayed", "relayed · closed N", "relayed + user note"
+      <i class="conn b"></i>
+      <div class="node recv">Advocate</div>                    the receiving side's name
+    </li>
+
+  ── Argument cards (For / Against), ordered conceded → stands → narrowed → contested ──
+  {{PROS}} / {{CONS}}
+    <li class="card advocate" data-status="conceded">          (class critic for cons)
       <div class="card-head">
-        <a class="id p" href="#R1-P1">R1-P1</a>                 (class="id c" for cons)
+        <a class="id p" href="#R1-P1">R1-P1</a>                (class="id c" for cons)
         <span class="status conceded">conceded by Critic</span>  status: conceded | stands | narrowed | contested
         <span class="lvl decisive"><i></i><i></i><i></i>decisive</span>
-                                                                lvl for pros: decisive | major | minor
-                                                                lvl for cons: blocker | major | minor
+                                                               lvl for pros: decisive | major | minor
+                                                               lvl for cons: blocker | major | minor
       </div>
       <strong class="ttl">Title</strong>
       <p>One line: the point as it finally stands.</p>
-    </li>
-  {{WITHDRAWN}}          <li class="wd critic"><a class="id c" href="#R1-C3">R1-C3</a>
-                           <span class="ttl">Title</span><span class="wd-by">by Critic · R2</span></li>
-                         or <li class="wd empty">Nothing was withdrawn.</li>
+      <ol class="track">                                       the point's thread, in order; who acted goes in <small>
+        <li class="tn raised c">raised<small>R1 · Critic</small></li>
+        <li class="tn rebut p">rebut<small>R1 · Advocate</small></li>
+        <li class="tn defend c">defend<small>R2 · Critic</small></li>
+        <li class="tn hold p">hold<small>R2 · Advocate</small></li>
+        <li class="tn end contested">contested</li>            end: conceded | stands | narrowed | contested | withdrawn
+      </ol>                                                    node classes: raised | concede | partial | rebut | accept | defend | hold | end
+    </li>                                                      actor class on each node: c (Critic) or p (Advocate)
+  {{WITHDRAWN}}        <li class="wd critic"><a class="id c" href="#R1-C3">R1-C3</a>
+                         <span class="ttl">Title</span><span class="wd-by">by Critic · R2</span></li>
+                       or <li class="wd empty">Nothing was withdrawn.</li>
 
   ── Transcript ──────────────────────────────────────────────────────────────────
   {{TRANSCRIPT}}   one <section class="round"> per round, then the closing section:
@@ -86,7 +107,7 @@
           <h4>Responses to objections</h4>
           <ul class="resp">
             <li><a class="id c" href="#R1-C1">R1-C1</a><span class="verb rebut">REBUT</span><span>…</span></li>
-          </ul>                                                  verb: concede | partial | rebut | accept | defend | hold
+          </ul>
           <h4>Pro arguments</h4>
           <div class="pt" id="R1-P1">
             <div class="pt-head"><span class="id p">R1-P1</span><strong>Title</strong><span class="lvl decisive"><i></i><i></i><i></i>decisive</span></div>
@@ -187,21 +208,22 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
-  .page { max-width: 70rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; display: grid; gap: 2.25rem; }
+  .page { max-width: 72rem; margin: 0 auto; padding: 2.5rem 1.5rem 5rem; display: grid; gap: 2.25rem; }
 
   h1, h2, h3, h4, h5 { font-family: var(--display); line-height: 1.15; margin: 0; text-wrap: balance; }
   a { color: inherit; text-decoration: underline; text-decoration-color: var(--muted); text-underline-offset: .15em; }
   a:hover { text-decoration-color: currentColor; }
-  a:focus-visible, summary:focus-visible { outline: 2px solid var(--advocate); outline-offset: 2px; }
+  a:focus-visible, summary:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--advocate); outline-offset: 2px; }
   p { margin: 0 0 .7rem; }
   p:last-child { margin-bottom: 0; }
   ul, ol { margin: 0; padding-left: 1.2rem; }
   li { margin-bottom: .3rem; }
   code { font-family: var(--mono); font-size: .88em; background: var(--neutral-soft); padding: .05em .3em; border-radius: 3px; }
+  figure { margin: 0; }
+  figcaption { font-size: .8rem; color: var(--muted); margin-top: .6rem; }
 
-  .label, .chip, .id, .status, .lvl, .verb, .who, .rtag, .rnote, .rlabel, .rb, .rmeta, .turn-meta, .tile .lbl, .tile .sub, .conf-text, .wd-by, .count, .eyebrow {
+  .label, .chip, .id, .status, .lvl, .verb, .who, .rtag, .rnote, .turn-meta, .tile .lbl, .tile .sub, .conf-text, .wd-by, .count, .eyebrow, .xl, .xs, .legend, .lane, .relay, .node b, .node.recv, .tn, .fate-row, .vstep span {
     font-family: var(--mono);
-    font-variant-numeric: tabular-nums;
   }
   .label, .eyebrow { font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
   section > .label, .section-head { margin-bottom: .85rem; }
@@ -214,14 +236,14 @@
   .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
   .chip { font-size: .72rem; padding: .25rem .6rem; border: 1px solid var(--rule); border-radius: 999px; background: var(--surface); color: var(--muted); }
 
-  /* ── verdict banner ───────────────────────────────────── */
+  /* ── verdict banner + scale ───────────────────────────── */
   .verdict {
     --v: var(--ok); --v-soft: var(--ok-soft); --v-line: var(--ok-line);
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
     gap: 1.5rem;
-    align-items: center;
-    padding: 1.5rem 1.75rem;
+    align-items: start;
+    padding: 1.5rem 1.75rem 1.25rem;
     background: var(--v-soft);
     border: 1px solid var(--v-line);
     border-left: 10px solid var(--v);
@@ -232,18 +254,31 @@
   .verdict.nogo { --v: var(--bad); --v-soft: var(--bad-soft); --v-line: var(--bad-line); }
   .v-word { font-family: var(--display); font-size: clamp(2.2rem, 5.5vw, 3.6rem); font-weight: 800; line-height: 1; color: var(--v); letter-spacing: -.02em; margin: .25rem 0 .6rem; }
   .v-line { font-size: 1.05rem; max-width: 60ch; }
-  .v-side { display: grid; gap: .35rem; justify-items: start; padding-left: 1.5rem; border-left: 1px solid var(--v-line); min-width: 9rem; }
+  .v-side { display: grid; gap: .35rem; align-content: start; justify-items: start; padding-left: 1.5rem; border-left: 1px solid var(--v-line); min-width: 9rem; align-self: stretch; }
   .conf { display: flex; gap: 4px; }
   .conf i { display: block; width: 1.6rem; height: .7rem; border-radius: 3px; background: var(--neutral-line); }
   .conf[data-confidence="low"] i:nth-child(1),
   .conf[data-confidence="medium"] i:nth-child(-n+2),
   .conf[data-confidence="high"] i { background: var(--v); }
   .conf-text { font-size: .8rem; color: var(--ink); text-transform: capitalize; }
+  .vscale { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; margin: 1.6rem 0 1.3rem; max-width: 34rem; }
+  .vstep { position: relative; height: .55rem; border-radius: 3px; background: var(--neutral-line); opacity: .45; }
+  .vstep.nogo { background: var(--bad); }
+  .vstep.rethink { background: var(--warn); }
+  .vstep.conditions { background: var(--ok-line); }
+  .vstep.go { background: var(--ok); }
+  .vstep span { position: absolute; top: .85rem; left: 50%; transform: translateX(-50%); font-size: .58rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+  .verdict.nogo .vstep.nogo, .verdict.rethink .vstep.rethink, .verdict.conditions .vstep.conditions, .verdict.go .vstep.go { opacity: 1; }
+  .verdict.nogo .vstep.nogo::after, .verdict.rethink .vstep.rethink::after, .verdict.conditions .vstep.conditions::after, .verdict.go .vstep.go::after {
+    content: ""; position: absolute; left: 50%; top: -.7rem; transform: translateX(-50%);
+    border: 6px solid transparent; border-top: 7px solid var(--v);
+  }
+  .verdict.nogo .vstep.nogo span, .verdict.rethink .vstep.rethink span, .verdict.conditions .vstep.conditions span, .verdict.go .vstep.go span { color: var(--v); font-weight: 600; }
 
   /* ── scoreboard ───────────────────────────────────────── */
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .75rem; }
   .tile { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: .9rem 1rem; display: grid; gap: .15rem; align-content: start; box-shadow: var(--shadow); }
-  .tile .num { font-family: var(--display); font-size: 2.1rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+  .tile .num { font-family: var(--display); font-size: 2.1rem; font-weight: 800; line-height: 1; }
   .tile .num .of { font-size: 1.1rem; font-weight: 500; color: var(--muted); }
   .tile .lbl { font-size: .66rem; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
   .tile .sub { font-size: .74rem; color: var(--muted); }
@@ -257,22 +292,54 @@
   .tile.warn .num { color: var(--warn); }
   .tile.neutral { background: var(--neutral-soft); border-color: var(--neutral-line); }
   .tile.neutral .num { color: var(--muted); }
-  .balance { margin-top: 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: .9rem 1rem; display: grid; gap: .5rem; box-shadow: var(--shadow); }
-  .bar { display: flex; gap: 2px; height: 1.1rem; border-radius: 4px; overflow: hidden; background: var(--neutral-soft); }
-  .bar .seg { display: block; min-width: 0; }
-  .bar .seg.p { background: var(--advocate-mark); }
-  .bar .seg.c { background: var(--critic-mark); }
-  .legend { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: .78rem; color: var(--muted); font-family: var(--mono); }
-  .legend .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; vertical-align: -1px; margin-right: .35rem; }
-  .legend .sw.p { background: var(--advocate-mark); }
-  .legend .sw.c { background: var(--critic-mark); }
-  .legend b { color: var(--ink); }
 
-  /* ── cards (generic) ──────────────────────────────────── */
+  /* ── charts row ───────────────────────────────────────── */
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; }
   .box { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 1.15rem 1.3rem; box-shadow: var(--shadow); }
-  .box h3 { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 .6rem; }
+  .box h3 { font-family: var(--mono); font-size: .7rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 .75rem; }
   .box.tint-warn { background: var(--warn-soft); border-color: var(--warn-line); }
   .box.tint-2 { background: var(--surface-2); }
+  .legend { display: flex; gap: .9rem 1.1rem; flex-wrap: wrap; font-size: .7rem; color: var(--muted); margin-top: .75rem; }
+  .legend .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; vertical-align: -1px; margin-right: .35rem; }
+  .sw.p { background: var(--advocate-mark); }
+  .sw.c { background: var(--critic-mark); }
+  .sw.conceded { background: var(--ok); }
+  .sw.stands { background: var(--rule-strong); }
+  .sw.narrowed { background: var(--warn); }
+  .sw.contested { background: var(--muted); }
+  .sw.withdrawn { background: var(--neutral-line); }
+
+  /* outcome bars */
+  .fate { display: grid; gap: .8rem; }
+  .fate-row { display: grid; grid-template-columns: 4.5rem minmax(0, 1fr) 2rem; align-items: center; gap: .6rem; font-size: .7rem; }
+  .fate-row .side { letter-spacing: .1em; text-transform: uppercase; font-weight: 600; }
+  .fate-row.p .side { color: var(--advocate); }
+  .fate-row.c .side { color: var(--critic); }
+  .fate-row .tot { text-align: right; color: var(--muted); }
+  .fate-bar { display: flex; gap: 2px; height: .9rem; border-radius: 4px; overflow: hidden; background: var(--neutral-soft); }
+  .fate-bar i { display: block; flex: var(--n, 0) 1 0; min-width: 0; }
+  .fs.conceded { background: var(--ok); }
+  .fs.stands { background: var(--rule-strong); }
+  .fs.narrowed { background: var(--warn); }
+  .fs.contested { background: var(--muted); }
+  .fs.withdrawn { background: var(--neutral-line); }
+  .fate-nums { grid-column: 2 / 4; font-size: .66rem; color: var(--muted); letter-spacing: .04em; }
+
+  /* bar chart */
+  .chart { position: relative; --max: 1; padding-top: 1.1rem; }
+  .chart .grid { position: absolute; left: 0; right: 0; top: 1.1rem; height: 7rem; pointer-events: none;
+    background-image: linear-gradient(var(--rule), var(--rule)), linear-gradient(var(--rule), var(--rule)), linear-gradient(var(--rule), var(--rule)), linear-gradient(var(--rule-strong), var(--rule-strong));
+    background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 0, 0 33.33%, 0 66.66%, 0 100%; opacity: .55; }
+  .cols { position: relative; list-style: none; margin: 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: .5rem; }
+  .col { display: grid; grid-template-rows: 7rem auto auto; gap: .4rem; text-align: center; margin: 0; }
+  .bars { display: flex; align-items: flex-end; justify-content: center; gap: 2px; height: 7rem; }
+  .bar { position: relative; display: block; width: 1.05rem; height: calc(var(--n, 0) / var(--max, 1) * 100%); border-radius: 4px 4px 0 0; cursor: default; }
+  .bar.c { background: var(--critic-mark); }
+  .bar.p { background: var(--advocate-mark); }
+  .bar b { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -3px); font-family: var(--mono); font-size: .66rem; font-weight: 500; color: var(--ink); opacity: 0; pointer-events: none; }
+  .bar:hover b, .bar:focus-visible b { opacity: 1; }
+  .xl { font-size: .74rem; font-weight: 600; letter-spacing: .08em; }
+  .xs { font-size: .64rem; color: var(--muted); }
 
   /* ── idea ─────────────────────────────────────────────── */
   .idea { margin: 0; font-size: 1.15rem; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; max-width: 70ch; }
@@ -304,6 +371,8 @@
   .verb.partial { background: var(--warn-soft); color: var(--warn); }
   .verb.rebut, .verb.defend { background: var(--rule-strong); color: var(--bg); }
   .verb.hold { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
+  .verb.raised { background: var(--surface); border: 1px solid var(--rule-strong); color: var(--ink); }
+  .verb.closing { background: var(--surface); border: 1px solid var(--rule); color: var(--muted); }
   .lvl { display: inline-flex; align-items: center; gap: .22rem; font-size: .66rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); --dot: var(--muted); }
   .lvl i { display: inline-block; width: .5rem; height: .5rem; border-radius: 50%; background: var(--neutral-line); }
   .lvl i:last-of-type { margin-right: .25rem; }
@@ -315,7 +384,7 @@
   .critic .lvl { --dot: var(--critic-mark); }
   .critic .lvl.blocker { --dot: var(--bad); }
 
-  /* ── argument cards ───────────────────────────────────── */
+  /* ── argument cards + thread tracks ───────────────────── */
   .pc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
   .col-head { display: flex; align-items: center; gap: .6rem; margin-bottom: .75rem; padding-bottom: .5rem; border-bottom: 3px solid currentColor; }
   .col-head h2 { font-size: 1.3rem; font-weight: 800; }
@@ -323,7 +392,7 @@
   .against .col-head { color: var(--critic); }
   .col-head .count { background: var(--surface); color: inherit; border: 1px solid currentColor; }
   .cards { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
-  .card { display: grid; gap: .4rem; padding: .95rem 1.05rem; border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); box-shadow: var(--shadow); }
+  .card { display: grid; gap: .45rem; padding: .95rem 1.05rem; border-radius: 10px; border: 1px solid var(--rule); background: var(--surface); box-shadow: var(--shadow); }
   .card.advocate { background: var(--advocate-soft); border-color: var(--advocate-line); }
   .card.critic { background: var(--critic-soft); border-color: var(--critic-line); }
   .card[data-status="contested"] { border-style: dashed; }
@@ -332,22 +401,60 @@
   .card p { margin: 0; font-size: .93rem; }
   .cards .empty { padding: .5rem 0; }
 
+  .track { list-style: none; margin: .35rem 0 0; padding: .1rem 0 0; display: flex; flex-wrap: wrap; align-items: stretch; gap: .45rem 0; font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; }
+  .tn { position: relative; display: inline-flex; flex-direction: column; justify-content: center; gap: .1rem; padding: .28rem .55rem; border-radius: 6px; background: var(--surface); border: 1px solid var(--rule); color: var(--ink); line-height: 1.1; margin: 0; }
+  .tn small { font-size: .56rem; letter-spacing: .03em; text-transform: none; color: var(--muted); }
+  .tn.c { box-shadow: inset 3px 0 0 var(--critic-mark); }
+  .tn.p { box-shadow: inset 3px 0 0 var(--advocate-mark); }
+  .tn + .tn { margin-left: 1.25rem; }
+  .tn + .tn::before { content: ""; position: absolute; left: -1.2rem; top: 50%; width: .8rem; height: 2px; background: var(--muted); transform: translateY(-50%); }
+  .tn + .tn::after { content: ""; position: absolute; left: -.5rem; top: 50%; transform: translateY(-50%); border: 4px solid transparent; border-left: 6px solid var(--muted); }
+  .tn.concede, .tn.accept { background: var(--ok-soft); color: var(--ok); border-color: var(--ok-line); }
+  .tn.partial { background: var(--warn-soft); color: var(--warn); border-color: var(--warn-line); }
+  .tn.rebut, .tn.defend { background: var(--rule-strong); color: var(--bg); border-color: var(--rule-strong); }
+  .tn.rebut small, .tn.defend small { color: var(--bg); opacity: .75; }
+  .tn.hold { background: transparent; border-style: dashed; border-color: var(--muted); color: var(--muted); }
+  .tn.end { font-weight: 600; justify-content: center; }
+  .tn.end.conceded { background: var(--ok); color: var(--on-mark); border-color: var(--ok); }
+  .tn.end.stands { background: var(--rule-strong); color: var(--bg); border-color: var(--rule-strong); }
+  .tn.end.narrowed { background: var(--warn); color: var(--on-mark); border-color: var(--warn); }
+  .tn.end.contested { background: transparent; border: 1px dashed var(--muted); color: var(--muted); }
+  .tn.end.withdrawn { background: var(--neutral-soft); color: var(--muted); text-decoration: line-through; }
+
   .wd-list { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
-  .wd { display: inline-flex; align-items: center; gap: .45rem; padding: .4rem .7rem; border-radius: 8px; background: var(--surface); border: 1px solid var(--rule); font-size: .88rem; }
+  .wd { display: inline-flex; align-items: center; gap: .45rem; padding: .4rem .7rem; border-radius: 8px; background: var(--surface); border: 1px solid var(--rule); font-size: .88rem; margin: 0; }
   .wd .ttl { text-decoration: line-through; color: var(--muted); }
   .wd-by { font-size: .66rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   .wd.empty { font-style: italic; color: var(--muted); }
 
-  /* ── timeline ─────────────────────────────────────────── */
-  .timeline { list-style: none; margin: 0; padding: .25rem 0 .5rem; display: flex; gap: .75rem; overflow-x: auto; }
-  .rnode { flex: 1 0 11rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: .8rem .9rem; display: grid; gap: .5rem; box-shadow: var(--shadow); position: relative; }
-  .rlabel { font-weight: 600; font-size: .8rem; letter-spacing: .08em; }
-  .rbars { display: grid; gap: .35rem; }
-  .rb { display: flex; align-items: center; gap: .45rem; font-size: .72rem; color: var(--muted); }
-  .rb i { display: block; height: .55rem; border-radius: 3px; width: calc(var(--n, 0) * 0.85rem); max-width: 7rem; min-width: 2px; }
-  .rb.c i { background: var(--critic-mark); }
-  .rb.p i { background: var(--advocate-mark); }
-  .rmeta { font-size: .7rem; color: var(--muted); }
+  /* ── sequence diagram ─────────────────────────────────── */
+  .seq-wrap { overflow-x: auto; }
+  .lanes, .seq { display: grid; grid-template-columns: minmax(11rem, 1fr) 2.6rem 9.5rem 2.6rem minmax(11rem, 1fr); align-items: center; min-width: 44rem; }
+  .lanes { margin-bottom: .7rem; }
+  .lane { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; text-align: center; padding: .4rem; border-radius: 6px; font-weight: 600; }
+  .lane.c { grid-column: 1; background: var(--critic-soft); color: var(--critic); }
+  .lane.m { grid-column: 3; background: var(--surface-2); color: var(--muted); border: 1px dashed var(--neutral-line); }
+  .lane.a { grid-column: 5; background: var(--advocate-soft); color: var(--advocate); }
+  .seq-list { list-style: none; margin: 0; padding: 0; display: grid; gap: .5rem; }
+  .seq { margin: 0; }
+  .seq .node { padding: .5rem .65rem; border-radius: 8px; border: 1px solid var(--rule); background: var(--surface); display: flex; flex-wrap: wrap; gap: .3rem; align-items: center; font-size: .78rem; min-height: 1.5rem; }
+  .seq .node b { font-size: .66rem; letter-spacing: .08em; text-transform: uppercase; margin-right: .2rem; font-weight: 600; }
+  .seq.critic .node.speaker { grid-column: 1; background: var(--critic-soft); border-color: var(--critic-line); }
+  .seq.advocate .node.speaker { grid-column: 5; background: var(--advocate-soft); border-color: var(--advocate-line); }
+  .seq.critic .node.recv { grid-column: 5; }
+  .seq.advocate .node.recv { grid-column: 1; }
+  .seq .node.recv { justify-content: center; color: var(--muted); font-size: .64rem; letter-spacing: .1em; text-transform: uppercase; background: transparent; border: 1px dashed var(--neutral-line); }
+  .seq .relay { grid-column: 3; text-align: center; font-size: .6rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: var(--surface-2); border: 1px dashed var(--neutral-line); border-radius: 999px; padding: .32rem .5rem; line-height: 1.2; }
+  .seq .conn { position: relative; height: 2px; margin: 0; --arrow: var(--muted); background: var(--arrow); }
+  .seq.critic .conn { --arrow: var(--critic-mark); }
+  .seq.advocate .conn { --arrow: var(--advocate-mark); }
+  .seq.critic .conn.a { grid-column: 2; }
+  .seq.critic .conn.b { grid-column: 4; }
+  .seq.advocate .conn.a { grid-column: 4; }
+  .seq.advocate .conn.b { grid-column: 2; }
+  .seq .conn::after { content: ""; position: absolute; top: 50%; transform: translateY(-50%); border: 5px solid transparent; }
+  .seq.critic .conn::after { right: -3px; border-left: 8px solid var(--arrow); }
+  .seq.advocate .conn::after { left: -3px; border-right: 8px solid var(--arrow); }
 
   /* ── transcript ───────────────────────────────────────── */
   .round { display: grid; gap: .75rem; margin-bottom: 1.5rem; }
@@ -375,7 +482,7 @@
   .pt-head strong { font-family: var(--display); font-size: 1.02rem; font-weight: 700; }
   .pt-head .lvl { margin-left: auto; }
   .pt p { font-size: .94rem; }
-  .msg ul.resp { list-style: none; padding: 0; margin: 0; display: grid; gap: .4rem; }
+  .msg ul.resp { list-style: none; padding: 0; margin: 0 0 .5rem; display: grid; gap: .4rem; }
   .msg ul.resp li { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: .5rem .75rem; font-size: .93rem; }
   .msg ul.resp li > span:last-child { flex: 1 1 20rem; }
   .msg pre, .msg table { overflow-x: auto; max-width: 100%; }
@@ -394,7 +501,7 @@
     .page { padding: 1.75rem 1rem 4rem; gap: 1.75rem; }
     .verdict { grid-template-columns: 1fr; }
     .v-side { padding-left: 0; border-left: 0; border-top: 1px solid var(--v-line); padding-top: .75rem; }
-    .why-grid, .pc-grid, .closing-grid { grid-template-columns: 1fr; }
+    .charts, .why-grid, .pc-grid, .closing-grid { grid-template-columns: 1fr; }
     .pt-head .lvl { margin-left: 0; }
   }
 </style>
@@ -411,6 +518,12 @@
       <div class="label">Verdict</div>
       <div class="v-word">{{VERDICT}}</div>
       <p class="v-line">{{VERDICT_LINE}}</p>
+      <div class="vscale" role="img" aria-label="Verdict scale from No-go to Go; the marker shows this debate's result">
+        <div class="vstep nogo"><span>No-go</span></div>
+        <div class="vstep rethink"><span>Rethink</span></div>
+        <div class="vstep conditions"><span>Go with conditions</span></div>
+        <div class="vstep go"><span>Go</span></div>
+      </div>
     </div>
     <div class="v-side">
       <div class="label">Confidence</div>
@@ -430,11 +543,37 @@
       <div class="tile neutral"><div class="num">{{WITHDRAWN_COUNT}}</div><div class="lbl">Withdrawn</div><div class="sub">dropped after rebuttal</div></div>
       <div class="tile"><div class="num">{{ROUNDS_RUN}}<span class="of">/{{ROUNDS_TOTAL}}</span></div><div class="lbl">Rounds</div><div class="sub">{{STOP_LABEL}}</div></div>
     </div>
-    <div class="balance">
-      <div class="label">Standing arguments</div>
-      <div class="bar"><span class="seg p" style="flex: {{PROS_STANDING}} 1 0"></span><span class="seg c" style="flex: {{CONS_STANDING}} 1 0"></span></div>
-      <div class="legend"><span><i class="sw p"></i><b>{{PROS_STANDING}}</b> for</span><span><i class="sw c"></i><b>{{CONS_STANDING}}</b> against</span></div>
-    </div>
+  </section>
+
+  <section class="charts" id="charts">
+    <figure class="box">
+      <h3>Where the arguments ended up</h3>
+      <div class="fate">
+        <div class="fate-row p">
+          <span class="side">For</span>
+          <div class="fate-bar"><i class="fs conceded" style="--n:{{P_CONCEDED}}" title="conceded by Critic"></i><i class="fs stands" style="--n:{{P_STANDS}}" title="stands"></i><i class="fs narrowed" style="--n:{{P_NARROWED}}" title="narrowed"></i><i class="fs contested" style="--n:{{P_CONTESTED}}" title="contested"></i><i class="fs withdrawn" style="--n:{{P_WITHDRAWN}}" title="withdrawn"></i></div>
+          <span class="tot">{{PROS_TOTAL}}</span>
+          <div class="fate-nums">✓ {{P_CONCEDED}} conceded · ● {{P_STANDS}} stand · ◐ {{P_NARROWED}} narrowed · ◇ {{P_CONTESTED}} contested · ✕ {{P_WITHDRAWN}} withdrawn</div>
+        </div>
+        <div class="fate-row c">
+          <span class="side">Against</span>
+          <div class="fate-bar"><i class="fs conceded" style="--n:{{C_CONCEDED}}" title="conceded by Advocate"></i><i class="fs stands" style="--n:{{C_STANDS}}" title="stands"></i><i class="fs narrowed" style="--n:{{C_NARROWED}}" title="narrowed"></i><i class="fs contested" style="--n:{{C_CONTESTED}}" title="contested"></i><i class="fs withdrawn" style="--n:{{C_WITHDRAWN}}" title="withdrawn"></i></div>
+          <span class="tot">{{CONS_TOTAL}}</span>
+          <div class="fate-nums">✓ {{C_CONCEDED}} conceded · ● {{C_STANDS}} stand · ◐ {{C_NARROWED}} narrowed · ◇ {{C_CONTESTED}} contested · ✕ {{C_WITHDRAWN}} withdrawn</div>
+        </div>
+      </div>
+      <div class="legend"><span><i class="sw conceded"></i>conceded by the other side</span><span><i class="sw stands"></i>stands</span><span><i class="sw narrowed"></i>narrowed</span><span><i class="sw contested"></i>contested</span><span><i class="sw withdrawn"></i>withdrawn</span></div>
+      <figcaption>Every argument raised, by how its thread ended. Green means the opponent gave in.</figcaption>
+    </figure>
+    <figure class="box">
+      <h3>Points raised per round</h3>
+      <div class="chart" style="--max: {{ROUND_MAX}}">
+        <div class="grid"></div>
+        <ol class="cols">{{ROUND_COLUMNS}}</ol>
+      </div>
+      <div class="legend"><span><i class="sw c"></i>objections (Critic)</span><span><i class="sw p"></i>pro arguments (Advocate)</span></div>
+      <figcaption>New points per turn. A debate that has said everything shows empty columns before it stops.</figcaption>
+    </figure>
   </section>
 
   <section id="idea">
@@ -484,9 +623,13 @@
     <ul class="wd-list">{{WITHDRAWN}}</ul>
   </section>
 
-  <section id="rounds">
-    <div class="label">Round by round</div>
-    <ol class="timeline">{{TIMELINE}}</ol>
+  <section id="flow">
+    <div class="section-head"><h2>How the debate moved</h2></div>
+    <figure class="box seq-wrap">
+      <div class="lanes"><div class="lane c">Critic</div><div class="lane m">Moderator</div><div class="lane a">Advocate</div></div>
+      <ol class="seq-list">{{SEQUENCE}}</ol>
+      <figcaption>Each turn as it travelled: the speaker's new points and answers, handed to the moderator, relayed verbatim to the other side. The sides never spoke directly.</figcaption>
+    </figure>
   </section>
 
   <section id="transcript">
