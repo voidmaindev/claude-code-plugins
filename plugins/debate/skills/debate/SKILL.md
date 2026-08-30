@@ -18,7 +18,7 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
 - **Agents:** `debate-critic` and `debate-advocate`, shipped with this plugin — spawn with the Agent tool (`subagent_type`), continue with SendMessage. Display names everywhere: **Critic** and **Advocate**.
 - **Tools this skill uses:** Agent (spawn a debater), SendMessage (continue a debater — if it is not loaded, load it first with ToolSearch `select:SendMessage`), AskUserQuestion (gates), Artifact (publish).
 - **Lookup cap:** each debater may use at most 2 tool lookups per turn (fixed, not a setting; the agent definitions enforce it — repeat it in every prompt anyway).
-- **Report template:** `$CLAUDE_SKILL_DIR/report.html` (bash) / `$env:CLAUDE_SKILL_DIR\report.html` (PowerShell). It is design-complete: fill its placeholders, never restyle it at runtime. The markup contract for every placeholder is the comment at the top of the template.
+- **Report template:** `$CLAUDE_SKILL_DIR/report.html` (bash) / `$env:CLAUDE_SKILL_DIR\report.html` (PowerShell). It is design-complete: fill its placeholders, never restyle it at runtime. The markup contract for every placeholder is the comment at the top of the template. The report is **light by default**; it turns dark only when a host stamps `data-theme="dark"` on the root (e.g. the Artifact viewer's explicit dark setting) — never from the OS preference.
 - **Report file name:** `<YYYY-MM-DD>-<slug>.html` — `<slug>` = first ≤6 words of the idea, lower-case ASCII kebab-case, ≤40 chars. If the file already exists, append `-2`, `-3`, ….
 - **Point IDs:** Critic objections `C1, C2 …`, Advocate pro arguments `P1, P2 …` — global across the whole debate, never reused. Objections carry `severity: blocker|major|minor`; pro arguments carry `weight: decisive|major|minor`.
 - **Response verbs:** the other side answers a point with `CONCEDE` / `PARTIAL` / `REBUT`; the owner replies to a `REBUT` or `PARTIAL` with `ACCEPT` / `DEFEND`; the other side replies to a `DEFEND` with `ACCEPT` / `HOLD`. That is the whole thread — at most three exchanges per point; nothing is argued past a `HOLD`.
@@ -135,11 +135,18 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
 
 11. **Publish:** `Artifact(file_path: <scratchpad fragment>, favicon: "⚖️", title: <TITLE — the short idea name>, description: "<verdict> — <one-line reason>")`. If the tool is unavailable or fails, say so and continue; the local file is the deliverable either way.
 
-12. **Final summary** — print:
+12. **Open the report** — launch the local copy in the default browser with the command that matches the current OS/shell:
+    - Windows PowerShell: `Start-Process "<output_dir>\<file>"`
+    - Windows Git Bash: `cmd //c start "" "<output_dir>\<file>"` (Windows-style path)
+    - macOS: `open "<output_dir>/<file>"`
+    - Linux: `xdg-open "<output_dir>/<file>"`
+    If the command fails (no browser, headless session), do not stop — the path is in the summary anyway.
+
+13. **Final summary** — print:
     - Verdict + confidence, and one sentence why.
     - Top 3 pros and top 3 cons (ID · title · status).
     - Rounds run of `<rounds>` (with the stop reason if early), points withdrawn, threads contested.
-    - The local file path and the Artifact URL (or why there is none).
+    - The local file path (and whether it was opened) and the Artifact URL (or why there is none).
 
 **Rules:**
 - **NEVER** let the debaters talk to each other — every message goes through you.
@@ -152,6 +159,7 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
 - **NEVER** restyle the report template at runtime — placeholders only.
 - **ALWAYS** print one progress line after every turn.
 - **ALWAYS** produce the report, even after an early stop or a failure mid-debate (mark it partial and say what is missing).
+- **ALWAYS** open the local report in the browser when the run finishes; if that fails, print the path and move on.
 - **ALWAYS** keep IDs global and stable, and carry the `Closed — do not reopen` list in every Moderator block.
 - **ALWAYS** debate in the language of the idea and write the report in it too.
 - **ALWAYS** create `~/.debate_config` on the first run and tell the user once.

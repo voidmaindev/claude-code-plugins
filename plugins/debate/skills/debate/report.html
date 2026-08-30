@@ -4,6 +4,9 @@
   This file is an Artifact-style fragment (title + styles + content, no doctype/html/head/body).
   The local copy is the same content wrapped in a full document: everything above the
   "head-end" marker goes into <head>, everything below it into <body>.
+  Theme: light by default. The page turns dark only when a host stamps data-theme="dark"
+  on the root element (the Artifact viewer's explicit dark setting); the OS colour-scheme
+  preference is deliberately ignored, so the local file always opens light.
 
   {{TITLE}}          Short name of the idea, plain text (also the page name in the gallery).
   {{DATE}}           YYYY-MM-DD.
@@ -94,29 +97,7 @@
     --body: "Source Serif 4", Georgia, "Times New Roman", serif;
     --mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
   }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --bg: #111318;
-      --surface: #191C23;
-      --ink: #E6E8ED;
-      --muted: #9AA2B1;
-      --rule: #2A2F39;
-      --rule-strong: #E6E8ED;
-      --advocate: #82B4F5;
-      --advocate-soft: #1A2A45;
-      --critic: #F2A272;
-      --critic-soft: #3A2317;
-      --ok: #7BD199;
-      --ok-soft: #15321F;
-      --warn: #E8C067;
-      --warn-soft: #3A2E0E;
-      --bad: #F3928A;
-      --bad-soft: #3F1B18;
-      --neutral-soft: #262B35;
-      --target: #3A3210;
-    }
-  }
+  /* Light by default; dark only on an explicit data-theme="dark" stamp (no OS-preference query). */
   :root[data-theme="dark"] {
     color-scheme: dark;
     --bg: #111318;
