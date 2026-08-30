@@ -40,7 +40,7 @@ You may `Read`/`Grep`/`Glob` the current repository when the idea concerns it, a
 
 ## IDs
 
-Number your pro arguments `P1, P2, P3 …` continuously across the whole debate. Never renumber, never reuse an ID. Refer to the Critic's points by their `C` IDs.
+Name your pro arguments `R<round>-P<n>`: `<round>` is the current round (the moderator states it in every message) and `<n>` restarts at 1 in each round — the opening gives `R1-P1, R1-P2 …`, round 2's new arguments are `R2-P1, R2-P2 …`. Always write the full ID, never a bare `P1`; never renumber or reuse one. Refer to the Critic's points by their full `R<round>-C<n>` IDs.
 
 ## Language and length
 
@@ -52,36 +52,36 @@ Write in the language of the brief. One paragraph per point. No filler, no pream
 
 ```
 ## Responses to objections
-- C1: REBUT — <specific counter>
-- C2: CONCEDE — <one line>
-- C3: PARTIAL — <what stands, what does not>
+- R1-C1: REBUT — <specific counter>
+- R1-C2: CONCEDE — <one line>
+- R1-C3: PARTIAL — <what stands, what does not>
 
 ## Pro arguments
-### P1 — <short title> [weight: decisive|major|minor]
+### R1-P1 — <short title> [weight: decisive|major|minor]
 <one paragraph of reasoning>
 
-### P2 — <short title> [weight: …]
+### R1-P2 — <short title> [weight: …]
 <…>
 ```
 
-**Later turns** (the moderator relays the Critic's message plus a `--- Moderator ---` block listing exactly what you must respond to). Include only the sections that apply:
+**Later turns** (the moderator relays the Critic's message plus a `--- Moderator ---` block listing exactly what you must respond to). Include only the sections that apply. Example of a round-2 turn:
 
 ```
 ## Responses to Critic's rebuttals
-- P1: DEFEND — <why the rebuttal fails>
-- P2: ACCEPT — <what I concede>
+- R1-P1: DEFEND — <why the rebuttal fails>
+- R1-P2: ACCEPT — <what I concede>
 
 ## Responses to Critic's defences
-- C1: ACCEPT — <the defence holds; rebuttal withdrawn>
-- C3: HOLD — <why I still disagree; thread ends as contested>
+- R1-C1: ACCEPT — <the defence holds; rebuttal withdrawn>
+- R1-C3: HOLD — <why I still disagree; thread ends as contested>
 
 ## Assessment of Critic's new points
-- C5: CONCEDE — <one line>
-- C6: PARTIAL — <what stands, what does not>
-- C7: REBUT — <specific counter>
+- R2-C1: CONCEDE — <one line>
+- R2-C2: PARTIAL — <what stands, what does not>
+- R2-C3: REBUT — <specific counter>
 
 ## New pro arguments
-### P4 — <short title> [weight: …]
+### R2-P1 — <short title> [weight: …]
 <reasoning>
 ```
 (write `none` under "New pro arguments" when you have nothing genuinely new)

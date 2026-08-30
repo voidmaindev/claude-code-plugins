@@ -40,7 +40,7 @@ You may `Read`/`Grep`/`Glob` the current repository when the idea concerns it, a
 
 ## IDs
 
-Number your objections `C1, C2, C3 …` continuously across the whole debate. Never renumber, never reuse an ID. Refer to the Advocate's points by their `P` IDs.
+Name your objections `R<round>-C<n>`: `<round>` is the current round (the moderator states it in every message) and `<n>` restarts at 1 in each round — the opening gives `R1-C1, R1-C2 …`, round 2's new objections are `R2-C1, R2-C2 …`. Always write the full ID, never a bare `C1`; never renumber or reuse one. Refer to the Advocate's points by their full `R<round>-P<n>` IDs.
 
 ## Language and length
 
@@ -55,31 +55,31 @@ Write in the language of the brief. One paragraph per point. No filler, no pream
 <1–2 sentences: the idea in its strongest form>
 
 ## Objections
-### C1 — <short title> [severity: blocker|major|minor]
+### R1-C1 — <short title> [severity: blocker|major|minor]
 <one paragraph of reasoning>
 
-### C2 — <short title> [severity: …]
+### R1-C2 — <short title> [severity: …]
 <…>
 ```
 
-**Later turns** (the moderator relays the Advocate's message plus a `--- Moderator ---` block listing exactly what you must respond to). Include only the sections that apply:
+**Later turns** (the moderator relays the Advocate's message plus a `--- Moderator ---` block listing exactly what you must respond to). Include only the sections that apply. Example of a round-3 turn:
 
 ```
 ## Responses to Advocate's rebuttals
-- C1: DEFEND — <why the rebuttal fails>
-- C2: ACCEPT — <what I concede>
+- R2-C1: DEFEND — <why the rebuttal fails>
+- R2-C2: ACCEPT — <what I concede>
 
 ## Responses to Advocate's defences
-- P1: ACCEPT — <the defence holds; rebuttal withdrawn>
-- P2: HOLD — <why I still disagree; thread ends as contested>
+- R1-P1: ACCEPT — <the defence holds; rebuttal withdrawn>
+- R1-P2: HOLD — <why I still disagree; thread ends as contested>
 
 ## Assessment of Advocate's new points
-- P3: CONCEDE — <one line>
-- P4: PARTIAL — <what stands, what does not>
-- P5: REBUT — <specific counter>
+- R2-P1: CONCEDE — <one line>
+- R2-P2: PARTIAL — <what stands, what does not>
+- R2-P3: REBUT — <specific counter>
 
 ## New objections
-### C5 — <short title> [severity: …]
+### R3-C1 — <short title> [severity: …]
 <reasoning>
 ```
 (write `none` under "New objections" when you have nothing genuinely new)

@@ -20,7 +20,7 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
 - **Lookup cap:** each debater may use at most 2 tool lookups per turn (fixed, not a setting; the agent definitions enforce it — repeat it in every prompt anyway).
 - **Report template:** `$CLAUDE_SKILL_DIR/report.html` (bash) / `$env:CLAUDE_SKILL_DIR\report.html` (PowerShell). It is design-complete: fill its placeholders, never restyle it at runtime. The markup contract for every placeholder is the comment at the top of the template. The report is **light by default**; it turns dark only when a host stamps `data-theme="dark"` on the root (e.g. the Artifact viewer's explicit dark setting) — never from the OS preference.
 - **Report file name:** `<YYYY-MM-DD>-<slug>.html` — `<slug>` = first ≤6 words of the idea, lower-case ASCII kebab-case, ≤40 chars. If the file already exists, append `-2`, `-3`, ….
-- **Point IDs:** Critic objections `C1, C2 …`, Advocate pro arguments `P1, P2 …` — global across the whole debate, never reused. Objections carry `severity: blocker|major|minor`; pro arguments carry `weight: decisive|major|minor`.
+- **Point IDs:** `R<round>-C<n>` for Critic objections, `R<round>-P<n>` for Advocate pro arguments — `<round>` is the round the point was first raised in, `<n>` restarts at 1 every round (`R1-C1, R1-C2 … R2-C1 …`). IDs are always written in full (`R2-C1`, never `C1`), so every ID is unique and shows its round at a glance; never renumbered, never reused. Objections carry `severity: blocker|major|minor`; pro arguments carry `weight: decisive|major|minor`.
 - **Response verbs:** the other side answers a point with `CONCEDE` / `PARTIAL` / `REBUT`; the owner replies to a `REBUT` or `PARTIAL` with `ACCEPT` / `DEFEND`; the other side replies to a `DEFEND` with `ACCEPT` / `HOLD`. That is the whole thread — at most three exchanges per point; nothing is argued past a `HOLD`.
 - **Ledger statuses:** `open` (awaiting an answer) → exactly one of `conceded` (the other side conceded it — the strongest outcome), `stands` (owner defended, other side accepted the defence), `narrowed` (owner accepted a `PARTIAL`; record the narrowed wording), `contested` (a defence met a `HOLD`, or the thread was still open at the end), `withdrawn` (owner accepted a rebuttal).
 - **Verdict scale:** `Go` · `Go with conditions` · `Rethink` · `No-go`, with confidence `low` / `medium` / `high`.
@@ -76,11 +76,11 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
      ```
      OPENING TURN — Round 1 of <rounds>.
      <brief>
-     Give your objections now: target ~<points>, fewer if you only have fewer strong ones, more if you genuinely have more. Use your opening-turn format.
+     Give your objections now: target ~<points>, fewer if you only have fewer strong ones, more if you genuinely have more. Name them R1-C1, R1-C2, …. Use your opening-turn format.
      ```
    - Wait for the completion notification. **Never** write a side's turn yourself.
    - Record the message **verbatim** in `<transcript>` (round, side, text). Add every `C` point to `<ledger>` as `open`.
-   - Print one progress line, e.g. `R1 Critic: raised C1–C4 (1 blocker, 2 major, 1 minor)`.
+   - Print one progress line, e.g. `R1 Critic: raised R1-C1…R1-C4 (1 blocker, 2 major, 1 minor)`.
 
 6. **Round 1 — Advocate answers:**
    - `Agent(subagent_type: "debate-advocate", name: "advocate-<slug>")` with the prompt:
@@ -90,10 +90,10 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
      The Critic's opening, verbatim:
      <Critic's message>
      --- Moderator ---
-     Answer every objection (CONCEDE / PARTIAL / REBUT), then give your independent pro arguments: target ~<points>, fewer if you only have fewer strong ones, more if you genuinely have more. Use your opening-turn format.
+     Answer every objection (CONCEDE / PARTIAL / REBUT), then give your independent pro arguments: target ~<points>, fewer if you only have fewer strong ones, more if you genuinely have more. Name them R1-P1, R1-P2, …. Use your opening-turn format.
      ```
    - Wait; record verbatim; update `<ledger>` (each `C` → `conceded`, or stays `open` with the Advocate's `REBUT`/`PARTIAL` noted; each new `P` → `open`).
-   - Progress line, e.g. `R1 Advocate: conceded C2 · partial C4 · rebutted C1, C3 · raised P1–P3 (1 decisive)`.
+   - Progress line, e.g. `R1 Advocate: conceded R1-C2 · partial R1-C4 · rebutted R1-C1, R1-C3 · raised R1-P1…R1-P3 (1 decisive)`.
 
 7. **Rounds 2 … `<rounds>`** — for each round `k`:
    - **Critic's turn.** `SendMessage(to: "critic-<slug>")` with:
@@ -101,9 +101,9 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
      Round <k> of <rounds>. The Advocate's message, verbatim:
      <Advocate's last message>
      --- Moderator ---
-     Respond to: <built from the ledger — for each Critic point the Advocate answered with REBUT/PARTIAL: "C3 (Advocate: REBUT) → ACCEPT or DEFEND"; for each Advocate point the Critic rebutted and the Advocate DEFENDed: "P1 (Advocate: DEFEND) → ACCEPT or HOLD"; for the Advocate's new points: "P4–P5 → CONCEDE / PARTIAL / REBUT">
+     Respond to: <built from the ledger — for each Critic point the Advocate answered with REBUT/PARTIAL: "R1-C3 (Advocate: REBUT) → ACCEPT or DEFEND"; for each Advocate point the Critic rebutted and the Advocate DEFENDed: "R1-P1 (Advocate: DEFEND) → ACCEPT or HOLD"; for the Advocate's new points: "R2-P1, R2-P2 → CONCEDE / PARTIAL / REBUT">
      Closed — do not reopen: <IDs with statuses, or "none yet">
-     New objections: target ~<points>, only genuinely new — "none" is fine.
+     New objections: target ~<points>, only genuinely new — name them R<k>-C1, R<k>-C2, …; "none" is fine.
      User note: <text>   ← this line only when the user injected one
      ```
      Wait; record verbatim; update `<ledger>`; progress line.
@@ -111,7 +111,7 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
    - **Ledger update rules:** `CONCEDE` → `conceded`. `REBUT`/`PARTIAL` → stays `open`, awaiting the owner. Owner `ACCEPT` after `REBUT` → `withdrawn`; owner `ACCEPT` after `PARTIAL` → `narrowed`; owner `DEFEND` → stays `open`, awaiting the other side. Other side `ACCEPT` → `stands`; other side `HOLD` → `contested`. A required response a side omitted: ask for it once more in the next Moderator block; if it is omitted again, close that thread as `contested`.
    - **Early stop check** after the Advocate's turn (see Constants). On a stop, print `Stopping after round <k>: <reason>` and go to step 8.
    - **Interactive pause** (only when `<interactive>`): AskUserQuestion `"Round <k> of <rounds> done — continue? (Choose Other to type a note both sides will receive before the next round.)"` with options **Continue** (`"Run round <k+1>"`) and **Stop and summarize** (`"Skip the remaining rounds; closing statements and report now"`). Free text → it is the user note for the next round's Moderator blocks and is recorded in `<transcript>` as **User**; then continue.
-   - **Lost agent:** if SendMessage fails because the agent no longer exists, re-spawn it with the same `subagent_type`, the name suffixed `-r`, and a prompt containing `<brief>`, the full `<transcript>` so far and `"You are resuming as the <side>. Your earlier points are the <C|P> IDs above; continue from the ledger state."` — then resend the turn.
+   - **Lost agent:** if SendMessage fails because the agent no longer exists, re-spawn it with the same `subagent_type`, the name suffixed `-r`, and a prompt containing `<brief>`, the full `<transcript>` so far and `"You are resuming as the <side>. Your earlier points are the R<n>-C (or R<n>-P) IDs above; continue from the ledger state."` — then resend the turn.
    - **Format slip:** if a reply ignores the fixed format, send one `--- Moderator ---` reminder asking for it in the fixed format; if the second reply still slips, use it as is.
 
 8. **Closing statements** — Critic first, then Advocate, each via SendMessage:
@@ -129,7 +129,7 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
    - Weighing: a `blocker` that is `conceded` or `stands` → `No-go`; a `blocker` that is `contested` → at best `Rethink`; `Go` only when no `major` con is `conceded`/`stands` without a concrete mitigation. The number of points is irrelevant — status, severity and weight are what count.
 
 10. **Render the report:**
-    - Read the template. Drop its leading `<!-- … -->` documentation comment (the output starts at `<title>`), then replace every `{{PLACEHOLDER}}` exactly as that comment specifies: escape `<`, `>`, `&` in verbatim text; render the debaters' Markdown into the documented markup; give every point heading `id="C3"` / `id="P2"` so the pros & cons entries can link to it. Nothing outside the placeholders changes.
+    - Read the template. Drop its leading `<!-- … -->` documentation comment (the output starts at `<title>`), then replace every `{{PLACEHOLDER}}` exactly as that comment specifies: escape `<`, `>`, `&` in verbatim text; render the debaters' Markdown into the documented markup; give every point heading `id="R1-C3"` / `id="R2-P1"` so the pros & cons entries can link to it. Nothing outside the placeholders changes.
     - Write the filled fragment to `<scratchpad>/debate-<slug>.html` (the session's scratchpad directory, or the OS temp dir if there is none) — this copy is for publishing.
     - Write the local copy to `<output_dir>/<YYYY-MM-DD>-<slug>.html` as a full document: `<!doctype html><html lang="<lang>"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">`, then everything above the template's `<!-- head-end -->` marker, then `</head><body>`, then everything below the marker, then `</body></html>`.
 
@@ -160,7 +160,7 @@ Run a moderated debate about an idea the user gives you — a one-line feature, 
 - **ALWAYS** print one progress line after every turn.
 - **ALWAYS** produce the report, even after an early stop or a failure mid-debate (mark it partial and say what is missing).
 - **ALWAYS** open the local report in the browser when the run finishes; if that fails, print the path and move on.
-- **ALWAYS** keep IDs global and stable, and carry the `Closed — do not reopen` list in every Moderator block.
+- **ALWAYS** write point IDs in full (`R2-C1`, never `C1`), keep them stable, and carry the `Closed — do not reopen` list in every Moderator block.
 - **ALWAYS** debate in the language of the idea and write the report in it too.
 - **ALWAYS** create `~/.debate_config` on the first run and tell the user once.
 
