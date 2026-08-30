@@ -13,6 +13,7 @@ Claude Code plugin marketplace by voidmaindev.
 /plugin install branching@voidmaindev-claude-code-plugins
 /plugin install normalize@voidmaindev-claude-code-plugins
 /plugin install install-status-bar@voidmaindev-claude-code-plugins
+/plugin install debate@voidmaindev-claude-code-plugins
 ```
 
 ## Available Plugins
@@ -26,3 +27,4 @@ Claude Code plugin marketplace by voidmaindev.
 | `branching` | Lock the repo to a hardgated branch+PR workflow — ensure stable & main branches, set stable as default, restrict CI/CD to main, and write the policy into CLAUDE.md |
 | `normalize` | Normalize an existing project — replace CLAUDE.md with the canonical default, create the GitHub Projects Kanban board on the current repo, then strip init sections |
 | `install-status-bar` | Install the voidmaindev Claude Code status line at the user level (applies to every session) |
+| `debate` | Debate any idea between two isolated agents — an Advocate and a Critic relayed by the main session — and publish an HTML report with a verdict, pros & cons, and the full transcript |

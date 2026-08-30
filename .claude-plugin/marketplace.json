@@ -86,6 +86,17 @@
       },
       "category": "development",
       "keywords": ["statusline", "status-bar", "ui", "install", "user-settings"]
+    },
+    {
+      "name": "debate",
+      "source": "./plugins/debate",
+      "description": "Debate any idea between two isolated agents — an Advocate and a Critic relayed by the main session — and publish an HTML report with a verdict, pros & cons, and the full transcript",
+      "version": "1.0.0",
+      "author": {
+        "name": "voidmaindev"
+      },
+      "category": "development",
+      "keywords": ["debate", "brainstorm", "pros-cons", "devils-advocate", "decision", "multi-agent", "report"]
     }
   ]
 }
